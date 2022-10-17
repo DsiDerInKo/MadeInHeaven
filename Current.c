@@ -2,10 +2,42 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
+#include <math.h>
+#include <assert.h>
+#include <limits.h>
 #define max(a,b) (((a) > (b)) ? (a):(b))
-#define Pi 3.14
+#define TYPE_OF int
 
 typedef int (*cmpf) (void*, void*);
+
+typedef struct pairss {
+	int key;
+	char* value;
+} pairs;
+
+typedef struct Pairs {
+	unsigned int key;
+	TYPE_OF value;
+} Pair;
+
+typedef struct Nodes {
+
+	Pair elem;
+	struct Nodes* next;
+	struct Nodes* prev;
+
+} Node;
+
+typedef struct  starts_ends {
+	int start;
+	int end;
+}st;
+
+typedef struct pars {
+	int id;
+	int points;
+}par;
 
 void swap(int* a, int* b) {
 	int temp = *a;
@@ -13,9 +45,17 @@ void swap(int* a, int* b) {
 	*b = temp;
 }
 
+unsigned int hash(int x) {
+	unsigned long long new = x;
+	new *= 1000000007;
+	new = new >> 30;
+	return (unsigned int)new;
+}
+
 void* bin_search(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
 	size_t i = 0, j = size_arr - 1;
 	size_t middle;
+	void* answer=0;
 	while (i <= j) {
 		middle = (i + j) / 2;
 		if (comp(elem, (char*)arr + middle * size_elem) < 0) {
@@ -25,7 +65,8 @@ void* bin_search(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf 
 			i = middle + 1;
 		}
 		else {
-			return (char*)arr + middle * size_elem;
+			answer =(char*)arr + middle * size_elem;
+			break;
 		}
 		// чтобы получить индекс элемента (на который указывает результат функции)
 		// можно пользоваться "формулой" (mid-arr)/size_elem 
@@ -33,6 +74,66 @@ void* bin_search(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf 
 		//(в ином случае возвращается количество байт на промежутке mid-arr, 
 		//из-за чего нужно разделить на тип)      (через char(...))
 	}
+
+	return comp(answer, elem) == 0 ? answer : NULL;
+}
+
+void* bin_search_up(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
+	size_t i = 0, j = size_arr - 1;
+	size_t middle;
+	void* answer = 0;
+	while (i < j) {
+		middle = (i + j) / 2;
+		if (comp(elem, (char*)arr + middle * size_elem) >= 0) {
+			i = middle+1;
+		}
+		else {
+			j = middle;
+		}
+		
+	}
+	if (comp((char*)arr + (i - 1) * size_elem, (char*)arr + i * size_elem) < 0) {
+		i -= 1;
+	}
+	if (i < 0) return NULL;
+	answer = (char*)arr + i * size_elem;
+	return comp(answer, elem) == 0 ? answer : NULL;
+}
+
+void* bin_search_down(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
+	size_t i = 0, j = size_arr - 1;
+	size_t middle;
+	void* answer = 0;
+	while (i < j) {
+		middle = (i + j) / 2;
+		if (comp(elem, (char*)arr + middle * size_elem) <= 0) {
+			j = middle;
+		}
+		else {
+			i = middle + 1;
+		}
+	}
+	
+	answer = (char*)arr + i * size_elem;
+	return comp(answer, elem) == 0 ? answer : NULL;
+}
+
+void* lower_bound(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
+	size_t i = 0, j = size_arr - 1;
+	size_t middle;
+	void* answer = 0;
+	while (i < j) {
+		middle = (i + j) / 2;
+		if (comp(elem, (char*)arr + middle * size_elem) <= 0) {
+			j = middle;
+		}
+		else {
+			i = middle + 1;
+		}
+	}
+
+	answer = (char*)arr + i * size_elem;
+	return answer;
 }
 
 void insertion_sort(int* arr, int num) {
@@ -61,7 +162,6 @@ void selection_sort(int* arr, int number) {
 
 	}
 }
-
 
 int UN_partition_po_pivu(void* arr, size_t size_arr, size_t size_elem, void* pivot, cmpf cmp) {
 	int current;
@@ -233,12 +333,7 @@ void merge_sort(int* arr, int len) {
 	free(res);
 }
 
-typedef struct pairs {
-	int key;
-	char* value;
-} pair;
-
-void counting_sort(pair* arr, int len, int range) {
+void counting_sort(pairs* arr, int len, int range) {
 
 	int* new_len = calloc(range + 2, sizeof(int));
 	for (int i = 0; i < len; i++) {
@@ -247,34 +342,51 @@ void counting_sort(pair* arr, int len, int range) {
 	for (int i = 1; i <= range; i++) {
 		new_len[i] += new_len[i - 1];
 	}
-	pair* new_arr = malloc(len * sizeof(pair));
+	pairs* new_arr = malloc(len * sizeof(pairs));
 	for (int i = 0; i < len; i++) {
 		new_arr[new_len[arr[i].key]] = arr[i];
 		new_len[arr[i].key]++;
 	}
 
-	memmove(arr, new_arr, len * sizeof(pair));
+	memmove(arr, new_arr, len * sizeof(pairs));
 	free(new_arr);
 	free(new_len);
 }
 
-unsigned int hash(int x) {
-	unsigned long long new = x;
-	new *= 1000000007;
-	new = new >> 30;
-	return (unsigned int)new;
+int Find_K_Statistics(int* arr, int number, int point) {
+	int left_arr = 0, right_arr = number - 1;
+	while (1) {
+		int mid = partition_piva(arr, left_arr, right_arr);
+		if (left_arr == right_arr) {
+			return arr[mid];
+		}
+		else if (point <= mid) {
+			right_arr = mid;
+		}
+		else {
+			left_arr = mid + 1;
+		}
+	}
 }
 
-typedef struct Pairs {
-	int key;
-	char* value;
-} Pair;
+Pair init_Pair(unsigned int key, TYPE_OF value) {
 
-typedef struct Nodes {
 	Pair elem;
-	struct Nodes* next;
-	struct Nodes* prev;
-} Node;
+	elem.key = key;
+	elem.value = value;
+
+	return elem;
+}
+
+Node* init_Node(Pair elem) {
+
+	Node* new_node = malloc(sizeof(Node));
+	new_node->elem = elem;
+	new_node->next = new_node;
+	new_node->prev = new_node;
+
+	return new_node;
+}
 
 Node* create_head() {
 
@@ -309,14 +421,28 @@ void append_before(Pair new, Node* dot) {
 	return;
 }
 
-void del_node(Node* new) {
+Pair del_node(Node* new) {
 
 	new->prev->next = new->next;
 	new->next->prev = new->prev;
+	Pair temp = new->elem;
 	free(new);
 
-	return;
+	return temp;
 }
+
+//Hash table + tree
+/*
+typedef struct Pairs {
+	int key;
+	char* value;
+} Pair;
+
+typedef struct Nodes {
+	Pair elem;
+	struct Nodes* next;
+	struct Nodes* prev;
+} Node;
 
 typedef struct hash_tabels {
 	int size;
@@ -419,30 +545,6 @@ void del_HT(hash_table* HT) {
 	free(HT);
 }
 
-//int main() {
-//	freopen("input.txt", "r", stdin);
-//	FILE* fout = fopen("output.txt", "w");
-//	int n;
-//	scanf("%d", &n);
-//	srand(time(NULL));
-//
-//	int* arr;
-//	
-//	arr = malloc(n * sizeof(int));
-//	for (int i = 0; i < n; i++) {
-//		scanf("%d", &arr[i]);
-//	}
-//	
-//	//Quick_sort(arr, n);
-//	merge_sort(arr, n);
-//	printf("%lld", c);
-//
-//	return 0;
-//
-//	// die alles Gute, Arigato за птсы 
-//}
-
-
 typedef struct NNodes {
 
 	int key;
@@ -529,6 +631,45 @@ Pair* ConvertationTA(NNode* root) {
 
 	return arr;
 }
+
+*/
+
+//Functions for tree
+/*
+void DeleteTree(NNode* root) {
+
+	if (root == 0) return;
+
+	DeleteTree(root->left);
+	DeleteTree(root->right);
+
+	free(root);
+
+	return;
+
+}
+
+NNode* remove(NNode* root, int key) {
+
+	if (root == 0) {
+		return 0;
+	}
+	if (key == root->key) {
+		return root;
+	}
+	NNode* N;
+	if (key < root->key) {
+		N = remove(root->left,key);
+	}
+	else {
+		N = remove(root->right,key);
+	}
+
+	return N;
+}
+*/
+
+//main
 /*
 #define FST 1
 
@@ -600,54 +741,6 @@ int main() {
 #endif
 
 */
-/*
-void DeleteTree(NNode* root) {
-
-	if (root == 0) return;
-
-	DeleteTree(root->left);
-	DeleteTree(root->right);
-
-	free(root);
-
-	return;
-
-}
-*/
-
-
-/*
-NNode* remove(NNode* root, int key) {
-
-	if (root == 0) {
-		return 0;
-	}
-	if (key == root->key) {
-		return root;
-	}
-	NNode* N;
-	if (key < root->key) {
-		N = remove(root->left,key);
-	}
-	else {
-		N = remove(root->right,key);
-	}
-
-	return N;
-}
-*/
-
-
-typedef struct  starts_ends {
-	int start;
-	int end;
-}st;
-
-
-typedef struct pars {
-	int id;
-	int points;
-}par;
 
 int compare_for_E(void* x, void* y) {
 	if ((((par*)x)->points) < (((par*)y)->points)) {
@@ -698,38 +791,337 @@ int compare_int(void* x, void* y) {
 	}
 }
 
-int Find_K_Statistics(int* arr, int number, int point) {
-	int left_arr = 0, right_arr = number - 1;
-	while (1) {
-		int mid = partition_piva(arr, left_arr, right_arr);
-		if (left_arr == right_arr) {
-			return arr[mid];
-		}
-		else if (point <= mid) {
-			right_arr = mid;
-		}
-		else {
-			left_arr = mid + 1;
-		}
+typedef enum operands {
+	not_operand, plus, minus, mult
+}operand;
+
+int do_math(int num1,int num2,operand oper) {
+
+	switch (oper)
+	{
+	case plus:
+		return num1 + num2;
+	case minus:
+		return num1 - num2;
+	case mult:
+		return num1 * num2;
+	default:
+		assert(1);
 	}
 }
 
-int main() {
+operand is_operand(char* string) {
+	switch (string[0])
+	{
+	case '-':
+		return minus;
+	case '+':
+		return plus;
+	case '*':
+		return mult;
+	default:
+		return not_operand;
+	}
+}
 
-	int* arr = malloc(3 * sizeof(int));
-	arr[0] = 2;
-	arr[1] = 10;
-	arr[2] = 123;
-	int* new1 = bin_search(&arr[0], arr, 3, sizeof(int), compare_int);
-	int result = (new1 - arr);
-	printf("%d", result);
+void solver_4(Node* stack,char* string) {
+	int num,temp;
+	operand op = is_operand(string);
+
+	if (op == not_operand) {
+		printf("%d\n", stack->prev->elem.value);
+	}
+	else if(op == plus) {
+		scanf("%d", &num);
+		temp = stack->prev->elem.value;
+		num = max(num, temp);
+		append_before(init_Pair(1, num), stack);
+	}
+	else if (op == minus) {
+		del_node(stack->prev);
+	}
+}
+
+void solver_3(Node* stack,char* string) {
+	
+	operand op = is_operand(string);
+
+	if (op == not_operand) {
+		append_before(init_Pair(1, atoi(string)), stack);
+	}
+	else {
+		Pair element2 = del_node(stack->prev);
+		Pair element1 = del_node(stack->prev);
+		append_before(init_Pair(1, do_math(element1.value, element2.value, op)), stack);
+	}
 	return 0;
 }
 
-/*
-
+int main() {
 	/*
+	char bracket[10000+1];
+	Pair temp;
 
+	Node* Head = create_head();
+	
+	while (scanf("%s", bracket)!=0) {
+		if (bracket[0] == '\n') break;
+		int i = 0;
+
+		do {
+			if (scanf("%c", &bracket[i]) < 1) return 0;
+		} while (isspace(bracket[i]));
+
+		if (bracket[i] == '[' || bracket[i] == '(') {
+			append_before(init_Pair(1,bracket[i]), Head);
+		}
+		else {
+			if (bracket[i] == ']') {
+				temp = del_node(Head->prev);
+				if (temp.symbol != '[') {
+					printf("NO\n");
+					break;
+				}
+			}
+			else if (bracket[i] == ')') {
+				temp = del_node(Head->prev);
+				if (temp.symbol != '(') {
+					printf("NO\n");
+					break;
+				}
+			}
+		}
+		printf("YES\n");
+		
+		i++;
+	}
+	*/
+	freopen("input.txt", "r", stdin);
+	Pair temp;
+	Node* Head = create_head();
+	Head->elem.value = INT_MIN;
+
+	char* string = malloc(11 * sizeof(char));
+	int number;
+	scanf("%d", &number);
+
+	for (int i = 0; i < number; i++) {
+		
+		scanf("%s", string);
+		solver_4(Head, string);
+	}
+	
+	return 0;
+}
+
+//Division of array
+/*
+	//freopen("input.txt", "r", stdin);
+	int number,temp,walls;
+	scanf("%d %d",&number,&walls);
+	int* arr = malloc(sizeof(int) * number);
+	for (int i = 0; i < number; i++) {
+		scanf("%d",arr + i);
+	}
+	int* pref = malloc(sizeof(int) * (number+1));
+	pref[0] = 0;
+	for (int i = 0; i < number; i++) {
+		pref[i+1] = pref[i] + arr[i];
+	}
+	int* jorno = malloc((walls+1) * sizeof(int));
+	jorno[0] = 0;
+	int summary = pref[number];
+	for (int j = 1; j <= walls; j++) {
+		double hu = (double)j * summary / walls;
+		int temp = ceil(hu);
+		int index = (int*) lower_bound(&temp, pref, number + 1, sizeof(int), compare_int) - pref;
+
+		if (index>1 && abs(hu - pref[index - 1]) <= abs(pref[index] - hu)) {
+			index -= 1;
+		}
+
+		jorno[j] = index;
+		if (jorno[j] <= jorno[j - 1]) {
+			jorno[j] = jorno[j-1]+1;
+		}
+	}
+	
+	int error = jorno[walls] > number ? jorno[walls] - number : 0;
+
+	for (int i = 1; i < walls; i++) {
+		jorno[i] = max(jorno[i - 1] + 1, jorno[i] - error);
+		printf("%d ", jorno[i]);
+	}
+	*/
+
+//Nested arrays v1
+/*int main() {
+
+	int number1, number2, elem;
+	scanf("%d", &number1);
+	int* arr1 = malloc(number1 * sizeof(int));
+	for (int i = 0; i < number1; i++) {
+		scanf("%d", &elem);
+		arr1[i] = elem;
+	}	
+	scanf("%d", &number2);
+	int* arr2 = malloc(number2 * sizeof(int));
+
+	for (int i = 0; i < number2; i++) {
+		scanf("%d", &elem);
+		arr2[i] = elem;
+	}
+	UN_quick_sort(arr1, number1, sizeof(int), compare_int);
+	UN_quick_sort(arr2, number2, sizeof(int), compare_int);
+	int i = 0, j = 0;
+	int rem;
+	while (i < number1 && j < number2) {
+		int rem = arr1[i];
+		while (i < number1 && arr1[i] == rem) i++;
+		if (arr2[j] == rem) { 
+			while (j < number2 && arr2[j] == rem) j++; 
+		}
+		else { printf("NO"); return 0; }
+	}
+	if (j != number2) {
+		printf("NO");
+		return 0;
+	}
+	if (i != number1) {
+		printf("NO");
+		return 0;
+	}
+	printf("YES");
+
+}*/
+
+//Nested arrays v2
+/*int main() {
+
+	int number1, number2, elem;
+	scanf("%d", &number1);
+	int* arr1 = malloc(number1 * sizeof(int));
+	for (int i = 0; i < number1; i++) {
+		scanf("%d", &elem);
+		arr1[i] = elem;
+	}	
+	scanf("%d", &number2);
+	int* arr2 = malloc(number2 * sizeof(int));
+
+	for (int i = 0; i < number2; i++) {
+		scanf("%d", &elem);
+		arr2[i] = elem;
+	}
+	UN_quick_sort(arr1, number1, sizeof(int), compare_int);
+	UN_quick_sort(arr2, number2, sizeof(int), compare_int);
+	int i1 = 0, j1 = 0, counter1 = 0;
+	int i2 = 0, j2 = 0, counter2 = 0;
+	int log1 = 0, log2 = 0,log3;
+	while (i1 < number1 && j1 < number2) {
+		if (arr1[i1] == arr2[j1]) {
+			counter1++;
+			i1++;
+		}
+		else {
+			j1++;
+		}
+		
+	}
+	while (i2 < number1 && j2 < number2) {
+		if (arr2[j2] == arr1[i2]) {
+			counter2++;
+			j2++;
+		}
+		else {
+			i2++;
+		}
+
+	}
+	if (counter1 == number1) {
+		log1 = 1;
+	}
+	if (counter2 == number2) {
+		log2 = 1;
+	}
+	log3 = log1 && log2;
+	if (log3) {
+		printf("YES");
+	}
+	else {
+		printf("NO");
+	}
+}*/
+
+//Garland
+/*
+# Линейные рекурентные соотношения(через калькулятор)
+# f(n) = 2 * f(n - 1) + 2 - f(n - 2)
+# f(n) = n * (c2 - 1 + n) + c1
+# f(1) = c2 + c1 = A <=> c1 = A - c2
+# f(n) = n ^ 2 + n * (c2 - 1) + A - c2
+
+# ищем миниму на отрезке[1, number]
+# 1 <= n <= number
+# n = 1 / 2 - c2 / 2
+#      |
+# 1 - 2 * number <= c2 <= -1
+
+# минимум этой функции(строчка выше) достгается при n = -(c2 - 1) / 2
+# можно подставить и получить это минимальное значение
+# однако n - целое и принадлежит от 1 до number, так что
+# необходимо узнать значения около этой точки
+# f(n) = c2 * (n - 1) + (n - 1) * n + A - фин.формула
+N = list(map(float, input().split()))
+number = N[0]
+A = N[1]
+c2 = -1 - 2 * ((A) * *(0.5))
+if (c2 > -1) :
+	c2 = -1
+if (c2 < 1 - 2 * number) :
+	c2 = 1 - 2 * number
+b = round(1 / 2 - c2 / 2)
+c2 = -A / (b - 1) - b
+ans = c2 * (number - 1) + (number - 1) * number + A
+print(f"{ans:.2f}")
+*/
+
+//Fences
+/*
+int main() {
+
+	int number, start, end;
+	scanf("%d", &number);
+	st* arr = malloc(number * sizeof(st));
+	for (int i = 0; i < number; i++) {
+		scanf("%d %d", &start, &end);
+		arr[i].start = start;
+		arr[i].end = end + 1;
+	}
+
+	UN_quick_sort(arr, number, sizeof(st), compare_for_st);
+
+	int summary = arr[0].end - arr[0].start;
+	int i = 1;
+	int max_end = arr[0].end;
+	while (i < number) {
+		if (max_end > arr[i].start) {
+
+			if (max_end < arr[i].end) {
+				summary += arr[i].end - max_end;
+			}
+		}
+		else {
+			summary += arr[i].end - arr[i].start;
+		}
+		max_end = max(max_end, arr[i].end);
+		i++;
+	}
+	printf(" %d ", summary);
+}
+*/
+
+//Test
+/*
 	freopen("input.txt", "r", stdin);
 	freopen("output.txt", "w", stdout);
 	int x;
