@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <limits.h>
 #define max(a,b) (((a) > (b)) ? (a):(b))
+#define min(a,b) (((a) < (b)) ? (a):(b))
 #define TYPE_OF int
 
 typedef int (*cmpf) (void*, void*);
@@ -43,6 +44,45 @@ void swap(int* a, int* b) {
 	int temp = *a;
 	*a = *b;
 	*b = temp;
+}
+
+#define Vector_type int
+typedef struct Vectors {
+
+	size_t size;
+	size_t capacity;
+	Vector_type* data;
+
+} Vector;
+
+Vector* init_vector() {
+
+	Vector* vector = malloc(sizeof(Vector));
+	vector->capacity = 2;
+	vector->size = 0;
+	vector->data = malloc(vector->capacity*sizeof(Vector_type));
+
+	return vector;
+}
+
+void vector_resize(Vector* self,size_t new_size) {
+	self->data = realloc(self->data,new_size*sizeof(Vector_type));
+	self->capacity = new_size;
+	self->size = min(self->size, new_size);
+}
+
+void vector_append(Vector* self,Vector_type elem) {
+	if (self->capacity == self->size) vector_resize(self, self->capacity << 1);
+	self->data[self->size++] = elem;
+}
+
+Vector_type vector_pop(Vector* self) {
+	if ((self->size << 2) + 1 <= self->capacity) vector_resize(self,(self->capacity>>1)+1);
+	return self->data[--self->size];
+}
+
+void clear_vector(Vector* self){
+	self->size = 0;
 }
 
 unsigned int hash(int x) {
@@ -106,7 +146,7 @@ void* bin_search_down(void* elem, void* arr, size_t size_arr, size_t size_elem, 
 	void* answer = 0;
 	while (i < j) {
 		middle = (i + j) / 2;
-		if (comp(elem, (char*)arr + middle * size_elem) <= 0) {
+		if (comp(elem, (char*)arr + middle * size_elem) <= 0){
 			j = middle;
 		}
 		else {
@@ -858,62 +898,27 @@ void solver_3(Node* stack,char* string) {
 }
 
 int main() {
-	/*
-	char bracket[10000+1];
-	Pair temp;
 
-	Node* Head = create_head();
+	int number, elem;
+	char operand;
 	
-	while (scanf("%s", bracket)!=0) {
-		if (bracket[0] == '\n') break;
-		int i = 0;
-
-		do {
-			if (scanf("%c", &bracket[i]) < 1) return 0;
-		} while (isspace(bracket[i]));
-
-		if (bracket[i] == '[' || bracket[i] == '(') {
-			append_before(init_Pair(1,bracket[i]), Head);
-		}
-		else {
-			if (bracket[i] == ']') {
-				temp = del_node(Head->prev);
-				if (temp.symbol != '[') {
-					printf("NO\n");
-					break;
-				}
-			}
-			else if (bracket[i] == ')') {
-				temp = del_node(Head->prev);
-				if (temp.symbol != '(') {
-					printf("NO\n");
-					break;
-				}
-			}
-		}
-		printf("YES\n");
-		
-		i++;
-	}
-	*/
-	freopen("input.txt", "r", stdin);
-	Pair temp;
-	Node* Head = create_head();
-	Head->elem.value = INT_MIN;
-
-	char* string = malloc(11 * sizeof(char));
-	int number;
+	Vector* vec = init_vector();
 	scanf("%d", &number);
-
-	for (int i = 0; i < number; i++) {
-		
-		scanf("%s", string);
-		solver_4(Head, string);
+	for (;;) {
+		do {
+			if (scanf("%c", &operand) < 1) return 0;
+		} while (isspace(operand));
+		if (operand == '+') {
+			scanf("%d", &elem);
+			vector_append(vec, elem);
+		}
+		if (operand == '-') {
+			printf("%d\n", vector_pop(vec));
+		}
 	}
-	
+
 	return 0;
 }
-
 //Division of array
 /*
 	//freopen("input.txt", "r", stdin);
