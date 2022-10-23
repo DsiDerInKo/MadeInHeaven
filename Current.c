@@ -46,6 +46,16 @@ void swap(int* a, int* b) {
 	*b = temp;
 }
 
+void UN_swap(void* a, void* b,size_t size_elem) {
+
+	void* temp=(void*)malloc(sizeof(size_elem));
+	memcpy(temp, a, size_elem);
+	memcpy(a, b, size_elem);
+	memcpy(b, temp, size_elem);
+	free(temp);
+
+}
+
 #define Vector_type int
 typedef struct Vectors {
 
@@ -83,6 +93,11 @@ Vector_type vector_pop(Vector* self) {
 
 void clear_vector(Vector* self){
 	self->size = 0;
+}
+
+void free_vector(Vector* self) {
+	free(self->data);
+	free(self);
 }
 
 unsigned int hash(int x) {
@@ -674,6 +689,78 @@ Pair* ConvertationTA(NNode* root) {
 
 */
 
+// !!!Binary_Heap!!!
+
+typedef struct Heaps {
+	Vector* vector;
+	cmpf comp;
+}Heap;
+
+Heap* init_Heap(cmpf comp) {
+	Heap* new_heap = malloc(sizeof(Heap));
+	new_heap->comp = comp;
+	new_heap->vector = init_vector();
+	return new_heap;
+}
+
+void sift_up(Heap* self,int index) {
+
+	int parent_index = (int)((index - 1) / 2);
+	while (index > 0) {
+
+		if (self->comp(&self->vector->data[index],
+			&self->vector->data[parent_index]) < 0) {
+			UN_swap(&self->vector->data[index],
+				&self->vector->data[parent_index],
+				sizeof(Vector_type));
+			index = parent_index;
+			parent_index = (int)((parent_index - 1) / 2);
+		}
+		else break;
+	}
+
+}
+
+void sift_down(Heap* self, int index) {
+
+	int child_index = index * 2 + 1;
+	while (self->vector->size > child_index) {
+		
+		if (self->vector->size > child_index+1) {
+			if (self->comp(&self->vector->data[index * 2 + 1],
+				&self->vector->data[index * 2 + 2]) > 0) child_index++;
+		}
+
+		if (self->comp(&self->vector->data[index],
+			&self->vector->data[child_index]) > 0) {
+			UN_swap(&self->vector->data[index],
+				&self->vector->data[child_index],
+				sizeof(Vector_type));
+			index = child_index;
+			child_index = index * 2 + 1;
+		}
+		else break;
+	}
+
+}
+
+void add_to_heap(Heap* self,Vector_type elem) {
+	vector_append(self->vector, elem);
+	sift_up(self, self->vector->size - 1);
+}
+
+Vector_type extract_min(Heap* self) {
+	UN_swap(&self->vector->data[0], &self->vector->data[self->vector->size - 1],sizeof(Vector_type));
+	Vector_type temp = vector_pop(self->vector);
+	sift_down(self, 0);
+	return temp;
+}
+
+void free_heap(Heap* self) {
+	free_vector(self->vector);
+	free(self);
+}
+
 //Functions for tree
 /*
 void DeleteTree(NNode* root) {
@@ -899,26 +986,9 @@ void solver_3(Node* stack,char* string) {
 
 int main() {
 
-	int number, elem;
-	char operand;
-	
-	Vector* vec = init_vector();
-	scanf("%d", &number);
-	for (;;) {
-		do {
-			if (scanf("%c", &operand) < 1) return 0;
-		} while (isspace(operand));
-		if (operand == '+') {
-			scanf("%d", &elem);
-			vector_append(vec, elem);
-		}
-		if (operand == '-') {
-			printf("%d\n", vector_pop(vec));
-		}
-	}
-
 	return 0;
 }
+
 //Division of array
 /*
 	//freopen("input.txt", "r", stdin);
