@@ -9,19 +9,19 @@
 #define max(a,b) (((a) > (b)) ? (a):(b))
 #define min(a,b) (((a) < (b)) ? (a):(b))
 #define TYPE_OF int
+#define Vector_type int
+
+
 
 typedef int (*cmpf) (void*, void*);
-
 typedef struct pairss {
 	int key;
 	char* value;
 } pairs;
-
 typedef struct Pairs {
 	unsigned int key;
 	TYPE_OF value;
 } Pair;
-
 typedef struct Nodes {
 
 	Pair elem;
@@ -29,17 +29,28 @@ typedef struct Nodes {
 	struct Nodes* prev;
 
 } Node;
-
 typedef struct  starts_ends {
 	int start;
 	int end;
 }st;
-
 typedef struct pars {
 	int id;
 	int points;
 }par;
+typedef struct Heaps {
+	Vector* vector;
+	cmpf comp;
+}Heap;
+typedef struct Vectors {
 
+	size_t size;
+	size_t capacity;
+	Vector_type* data;
+
+} Vector;
+
+// Swaps
+//
 void swap(int* a, int* b) {
 	int temp = *a;
 	*a = *b;
@@ -55,16 +66,11 @@ void UN_swap(void* a, void* b,size_t size_elem) {
 	free(temp);
 
 }
+//
 
-#define Vector_type int
-typedef struct Vectors {
 
-	size_t size;
-	size_t capacity;
-	Vector_type* data;
-
-} Vector;
-
+// Vector (dinamic array)
+//
 Vector* init_vector() {
 
 	Vector* vector = malloc(sizeof(Vector));
@@ -74,7 +80,6 @@ Vector* init_vector() {
 
 	return vector;
 }
-
 void vector_resize(Vector* self,size_t new_size) {
 	self->data = realloc(self->data,new_size*sizeof(Vector_type));
 	self->capacity = new_size;
@@ -99,6 +104,7 @@ void free_vector(Vector* self) {
 	free(self->data);
 	free(self);
 }
+//
 
 unsigned int hash(int x) {
 	unsigned long long new = x;
@@ -107,90 +113,144 @@ unsigned int hash(int x) {
 	return (unsigned int)new;
 }
 
-void* bin_search(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
-	size_t i = 0, j = size_arr - 1;
-	size_t middle;
-	void* answer=0;
-	while (i <= j) {
-		middle = (i + j) / 2;
-		if (comp(elem, (char*)arr + middle * size_elem) < 0) {
-			j = middle - 1;
-		}
-		else if (comp(elem, (char*)arr + middle * size_elem) > 0) {
-			i = middle + 1;
-		}
-		else {
-			answer =(char*)arr + middle * size_elem;
-			break;
-		}
-		// чтобы получить индекс элемента (на который указывает результат функции)
-		// можно пользоваться "формулой" (mid-arr)/size_elem 
-		// для пользовательских типов данных достаточно mid-arr 
-		//(в ином случае возвращается количество байт на промежутке mid-arr, 
-		//из-за чего нужно разделить на тип)      (через char(...))
-	}
 
-	return comp(answer, elem) == 0 ? answer : NULL;
+// Linked List
+//
+Pair init_Pair(unsigned int key, TYPE_OF value) {
+
+	Pair elem;
+	elem.key = key;
+	elem.value = value;
+
+	return elem;
 }
 
-void* bin_search_up(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
-	size_t i = 0, j = size_arr - 1;
-	size_t middle;
-	void* answer = 0;
-	while (i < j) {
-		middle = (i + j) / 2;
-		if (comp(elem, (char*)arr + middle * size_elem) >= 0) {
-			i = middle+1;
-		}
-		else {
-			j = middle;
-		}
-		
-	}
-	if (comp((char*)arr + (i - 1) * size_elem, (char*)arr + i * size_elem) < 0) {
-		i -= 1;
-	}
-	if (i < 0) return NULL;
-	answer = (char*)arr + i * size_elem;
-	return comp(answer, elem) == 0 ? answer : NULL;
+Node* init_Node(Pair elem) {
+
+	Node* new_node = malloc(sizeof(Node));
+	new_node->elem = elem;
+	new_node->next = new_node;
+	new_node->prev = new_node;
+
+	return new_node;
 }
 
-void* bin_search_down(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
-	size_t i = 0, j = size_arr - 1;
-	size_t middle;
-	void* answer = 0;
-	while (i < j) {
-		middle = (i + j) / 2;
-		if (comp(elem, (char*)arr + middle * size_elem) <= 0){
-			j = middle;
-		}
-		else {
-			i = middle + 1;
-		}
-	}
-	
-	answer = (char*)arr + i * size_elem;
-	return comp(answer, elem) == 0 ? answer : NULL;
+Node* create_head() {
+
+	Node* new = malloc(1 * sizeof(Node));
+	new->next = new;
+	new->prev = new;
+
+	return new;
 }
 
-void* lower_bound(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
-	size_t i = 0, j = size_arr - 1;
-	size_t middle;
-	void* answer = 0;
-	while (i < j) {
-		middle = (i + j) / 2;
-		if (comp(elem, (char*)arr + middle * size_elem) <= 0) {
-			j = middle;
-		}
-		else {
-			i = middle + 1;
-		}
-	}
+void append_after(Pair new, Node* dot) {
 
-	answer = (char*)arr + i * size_elem;
-	return answer;
+	Node* new_dot = malloc(1 * sizeof(Node));
+	new_dot->elem = new;
+	new_dot->next = dot->next;
+	dot->next->prev = new_dot;
+	dot->next = new_dot;
+	new_dot->prev = dot;
+
+	return;
 }
 
+void append_before(Pair new, Node* dot) {
+
+	Node* new_dot = malloc(1 * sizeof(Node));
+	new_dot->elem = new;
+	dot->prev->next = new_dot;
+	new_dot->prev = dot->prev;
+	dot->prev = new_dot;
+	new_dot->next = dot;
+
+	return;
+}
+
+Pair del_node(Node* new) {
+
+	new->prev->next = new->next;
+	new->next->prev = new->prev;
+	Pair temp = new->elem;
+	free(new);
+
+	return temp;
+}
+//
+
+
+// Binary_Heap
+//
+Heap* init_Heap(cmpf comp) {
+	Heap* new_heap = malloc(sizeof(Heap));
+	new_heap->comp = comp;
+	new_heap->vector = init_vector();
+	return new_heap;
+}
+
+void sift_up(Heap* self, int index) {
+
+	int parent_index = (int)((index - 1) / 2);
+	while (index > 0) {
+
+		if (self->comp(&self->vector->data[index],
+			&self->vector->data[parent_index]) < 0) {
+			UN_swap(&self->vector->data[index],
+				&self->vector->data[parent_index],
+				sizeof(Vector_type));
+			index = parent_index;
+			parent_index = (int)((parent_index - 1) / 2);
+		}
+		else break;
+	}
+
+}
+
+void sift_down(Heap* self, int index) {
+
+	int child_index = index * 2 + 1;
+	while (self->vector->size > child_index) {
+
+		if (self->vector->size > child_index + 1) {
+			if (self->comp(&self->vector->data[index * 2 + 1],
+				&self->vector->data[index * 2 + 2]) > 0) child_index++;
+		}
+
+		if (self->comp(&self->vector->data[index],
+			&self->vector->data[child_index]) > 0) {
+			UN_swap(&self->vector->data[index],
+				&self->vector->data[child_index],
+				sizeof(Vector_type));
+			index = child_index;
+			child_index = index * 2 + 1;
+		}
+		else break;
+	}
+
+}
+
+void add_to_heap(Heap* self, Vector_type elem) {
+	vector_append(self->vector, elem);
+	sift_up(self, self->vector->size - 1);
+}
+
+Vector_type extract_min(Heap* self) {
+	UN_swap(&self->vector->data[0], &self->vector->data[self->vector->size - 1], sizeof(Vector_type));
+	Vector_type temp = vector_pop(self->vector);
+	sift_down(self, 0);
+	return temp;
+}
+
+void free_heap(Heap* self) {
+	free_vector(self->vector);
+	free(self);
+}
+//
+
+
+// Sorts
+//
 void insertion_sort(int* arr, int num) {
 	int temp;
 	for (int i = 1; i < num; i++) {
@@ -407,6 +467,94 @@ void counting_sort(pairs* arr, int len, int range) {
 	free(new_arr);
 	free(new_len);
 }
+//
+
+
+// Searching algorythms
+//
+void* bin_search(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
+	size_t i = 0, j = size_arr - 1;
+	size_t middle;
+	void* answer = 0;
+	while (i <= j) {
+		middle = (i + j) / 2;
+		if (comp(elem, (char*)arr + middle * size_elem) < 0) {
+			j = middle - 1;
+		}
+		else if (comp(elem, (char*)arr + middle * size_elem) > 0) {
+			i = middle + 1;
+		}
+		else {
+			answer = (char*)arr + middle * size_elem;
+			break;
+		}
+		// чтобы получить индекс элемента (на который указывает результат функции)
+		// можно пользоваться "формулой" (mid-arr)/size_elem 
+		// для пользовательских типов данных достаточно mid-arr 
+		//(в ином случае возвращается количество байт на промежутке mid-arr, 
+		//из-за чего нужно разделить на тип)      (через char(...))
+	}
+
+	return comp(answer, elem) == 0 ? answer : NULL;
+}
+
+void* bin_search_up(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
+	size_t i = 0, j = size_arr - 1;
+	size_t middle;
+	void* answer = 0;
+	while (i < j) {
+		middle = (i + j) / 2;
+		if (comp(elem, (char*)arr + middle * size_elem) >= 0) {
+			i = middle + 1;
+		}
+		else {
+			j = middle;
+		}
+
+	}
+	if (comp((char*)arr + (i - 1) * size_elem, (char*)arr + i * size_elem) < 0) {
+		i -= 1;
+	}
+	if (i < 0) return NULL;
+	answer = (char*)arr + i * size_elem;
+	return comp(answer, elem) == 0 ? answer : NULL;
+}
+
+void* bin_search_down(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
+	size_t i = 0, j = size_arr - 1;
+	size_t middle;
+	void* answer = 0;
+	while (i < j) {
+		middle = (i + j) / 2;
+		if (comp(elem, (char*)arr + middle * size_elem) <= 0) {
+			j = middle;
+		}
+		else {
+			i = middle + 1;
+		}
+	}
+
+	answer = (char*)arr + i * size_elem;
+	return comp(answer, elem) == 0 ? answer : NULL;
+}
+
+void* lower_bound(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
+	size_t i = 0, j = size_arr - 1;
+	size_t middle;
+	void* answer = 0;
+	while (i < j) {
+		middle = (i + j) / 2;
+		if (comp(elem, (char*)arr + middle * size_elem) <= 0) {
+			j = middle;
+		}
+		else {
+			i = middle + 1;
+		}
+	}
+
+	answer = (char*)arr + i * size_elem;
+	return answer;
+}
 
 int Find_K_Statistics(int* arr, int number, int point) {
 	int left_arr = 0, right_arr = number - 1;
@@ -423,68 +571,25 @@ int Find_K_Statistics(int* arr, int number, int point) {
 		}
 	}
 }
+//
 
-Pair init_Pair(unsigned int key, TYPE_OF value) {
 
-	Pair elem;
-	elem.key = key;
-	elem.value = value;
+void eraosphen(int pivot, Node* Ans) {
 
-	return elem;
+	int* arr = malloc(pivot * sizeof(int));
+	for (size_t i = 0; i < pivot; i++) {
+		arr[i] = i;
+	}
+	arr[1] = 0;
+	for (size_t i = 2; i < pivot; i++) {
+		if (arr[i] != 0) {
+			for (size_t j = i * 2; j < pivot; j += i) arr[j] = 0;
+		}
+	}
+	for (size_t i = 0; i < pivot; i++) if (arr[i] != 0) append_after(init_Pair(1, arr[i]), Ans);
+
 }
 
-Node* init_Node(Pair elem) {
-
-	Node* new_node = malloc(sizeof(Node));
-	new_node->elem = elem;
-	new_node->next = new_node;
-	new_node->prev = new_node;
-
-	return new_node;
-}
-
-Node* create_head() {
-
-	Node* new = malloc(1 * sizeof(Node));
-	new->next = new;
-	new->prev = new;
-
-	return new;
-}
-
-void append_after(Pair new, Node* dot) {
-
-	Node* new_dot = malloc(1 * sizeof(Node));
-	new_dot->elem = new;
-	new_dot->next = dot->next;
-	dot->next->prev = new_dot;
-	dot->next = new_dot;
-	new_dot->prev = dot;
-
-	return;
-}
-
-void append_before(Pair new, Node* dot) {
-
-	Node* new_dot = malloc(1 * sizeof(Node));
-	new_dot->elem = new;
-	dot->prev->next = new_dot;
-	new_dot->prev = dot->prev;
-	dot->prev = new_dot;
-	new_dot->next = dot;
-
-	return;
-}
-
-Pair del_node(Node* new) {
-
-	new->prev->next = new->next;
-	new->next->prev = new->prev;
-	Pair temp = new->elem;
-	free(new);
-
-	return temp;
-}
 
 //Hash table + tree
 /*
@@ -689,78 +794,6 @@ Pair* ConvertationTA(NNode* root) {
 
 */
 
-// !!!Binary_Heap!!!
-
-typedef struct Heaps {
-	Vector* vector;
-	cmpf comp;
-}Heap;
-
-Heap* init_Heap(cmpf comp) {
-	Heap* new_heap = malloc(sizeof(Heap));
-	new_heap->comp = comp;
-	new_heap->vector = init_vector();
-	return new_heap;
-}
-
-void sift_up(Heap* self,int index) {
-
-	int parent_index = (int)((index - 1) / 2);
-	while (index > 0) {
-
-		if (self->comp(&self->vector->data[index],
-			&self->vector->data[parent_index]) < 0) {
-			UN_swap(&self->vector->data[index],
-				&self->vector->data[parent_index],
-				sizeof(Vector_type));
-			index = parent_index;
-			parent_index = (int)((parent_index - 1) / 2);
-		}
-		else break;
-	}
-
-}
-
-void sift_down(Heap* self, int index) {
-
-	int child_index = index * 2 + 1;
-	while (self->vector->size > child_index) {
-		
-		if (self->vector->size > child_index+1) {
-			if (self->comp(&self->vector->data[index * 2 + 1],
-				&self->vector->data[index * 2 + 2]) > 0) child_index++;
-		}
-
-		if (self->comp(&self->vector->data[index],
-			&self->vector->data[child_index]) > 0) {
-			UN_swap(&self->vector->data[index],
-				&self->vector->data[child_index],
-				sizeof(Vector_type));
-			index = child_index;
-			child_index = index * 2 + 1;
-		}
-		else break;
-	}
-
-}
-
-void add_to_heap(Heap* self,Vector_type elem) {
-	vector_append(self->vector, elem);
-	sift_up(self, self->vector->size - 1);
-}
-
-Vector_type extract_min(Heap* self) {
-	UN_swap(&self->vector->data[0], &self->vector->data[self->vector->size - 1],sizeof(Vector_type));
-	Vector_type temp = vector_pop(self->vector);
-	sift_down(self, 0);
-	return temp;
-}
-
-void free_heap(Heap* self) {
-	free_vector(self->vector);
-	free(self);
-}
-
 //Functions for tree
 /*
 void DeleteTree(NNode* root) {
@@ -869,6 +902,9 @@ int main() {
 
 */
 
+
+// Comparators
+//
 int compare_for_E(void* x, void* y) {
 	if ((((par*)x)->points) < (((par*)y)->points)) {
 		return 1;
@@ -917,7 +953,11 @@ int compare_int(void* x, void* y) {
 		return 0;
 	}
 }
+//
 
+
+// Practical
+//
 typedef enum operands {
 	not_operand, plus, minus, mult
 }operand;
@@ -981,15 +1021,108 @@ void solver_3(Node* stack,char* string) {
 		Pair element1 = del_node(stack->prev);
 		append_before(init_Pair(1, do_math(element1.value, element2.value, op)), stack);
 	}
+}
+
+int check_for_avaliable(int* arr,int arr_size, long long pivot,int count_jord) {
+
+	long long summary = 0;
+	int sount = 0;
+	
+	for (size_t i = 0; i < arr_size; i++){
+		if (sount >= count_jord) return 0;
+		if (arr[i] > pivot) return 0;
+		summary += arr[i];
+		if (summary > pivot) {
+			summary = arr[i];
+			sount++;
+		}
+	}
+	sount++;
+	
+	if (sount <= count_jord) {
+		return 1;
+	}
 	return 0;
 }
 
+long long maximal_among_minimal(int* arr,int arr_size,int count_jord) {
+	long long start = INT_MIN;
+	long long end = 0;
+	long long answer;
+	for (size_t i = 0; i < arr_size; i++) {
+		if (arr[i] > start) start = arr[i];
+		end += arr[i];
+	}
+	while (start <= end) {
+		long long pivot = (start + end) / 2;
+
+		if (check_for_avaliable(arr, arr_size, pivot, count_jord)) {
+			answer = pivot;
+			end = pivot - 1;
+		}
+		else start = pivot + 1;
+	}
+
+	return answer;
+
+}
+//
+
+//  MAIN
 int main() {
+	//freopen("input.txt", "r", stdin);
+	
+	Node* Head = create_head();
+	eraosphen(10000, Head);
+	while (Head->next != Head) {
+		Pair temp = del_node(Head->prev);
+		int res = temp.value;
+		printf("%d ", res);
+	}
 
 	return 0;
 }
 
-//Division of array
+//Array Division (100/100)
+/*
+int number, walls;
+
+	scanf("%d %d", &number, &walls);
+	int* arr = malloc(sizeof(int) * number);
+	for (int i = 0; i < number; i++) scanf("%d", arr + i);
+
+	int* jords = malloc(walls * sizeof(int));
+	long long pivo = maximal_among_minimal(arr, number, walls);
+	long long summary = 0;
+	int count = 0;
+
+	for (size_t i = 0; i < number; i++) {
+		if (count >= walls) return 0;
+		if (arr[i] > pivo) return 0;
+		summary += arr[i];
+		if (summary > pivo) {
+			summary = arr[i];
+			jords[count] = i;
+			count++;
+		}
+	}
+
+
+	for (size_t i = count; i < walls; i++){
+		jords[i] = number;
+	}
+	for (int i = walls-2; i >= 0; i--){
+		if (jords[i] >= jords[i + 1]) {
+			jords[i]=jords[i+1]-1;
+		}
+	}
+
+	for (size_t i = 0; i < walls-1; i++){
+		printf("%d ", jords[i]);
+	}
+
+*/
+//Array Division (80/100)
 /*
 	//freopen("input.txt", "r", stdin);
 	int number,temp,walls;
