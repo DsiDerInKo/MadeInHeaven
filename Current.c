@@ -8,8 +8,11 @@
 #include <limits.h>
 #define max(a,b) (((a) > (b)) ? (a):(b))
 #define min(a,b) (((a) < (b)) ? (a):(b))
+
+#define BufSize 50
+
 #define TYPE_OF int
-#define Vector_type int
+#define Vector_type int //Pair*
 
 
 
@@ -22,6 +25,10 @@ typedef struct Pairs {
 	unsigned int key;
 	TYPE_OF value;
 } Pair;
+typedef struct HeapPairs {
+	int value;
+	size_t heapIndex;
+}HeapPair;
 typedef struct Nodes {
 
 	Pair elem;
@@ -29,7 +36,7 @@ typedef struct Nodes {
 	struct Nodes* prev;
 
 } Node;
-typedef struct  starts_ends {
+typedef struct starts_ends {
 	int start;
 	int end;
 }st;
@@ -37,10 +44,6 @@ typedef struct pars {
 	int id;
 	int points;
 }par;
-typedef struct Heaps {
-	Vector* vector;
-	cmpf comp;
-}Heap;
 typedef struct Vectors {
 
 	size_t size;
@@ -48,6 +51,11 @@ typedef struct Vectors {
 	Vector_type* data;
 
 } Vector;
+typedef struct Heaps {
+	Vector* vector;
+	cmpf comp;
+}Heap;
+
 
 // Swaps
 //
@@ -57,7 +65,19 @@ void swap(int* a, int* b) {
 	*b = temp;
 }
 
-void UN_swap(void* a, void* b,size_t size_elem) {
+void SpecificSwap(HeapPair** a, HeapPair** b) {
+
+	Pair* temp1 = *a;
+	*a = *b;
+	*b = temp1;
+
+	int temp2 = (*a)->heapIndex;
+	(*a)->heapIndex = (*b)->heapIndex;
+	(*b)->heapIndex = temp2;
+
+}
+
+void UnSwap(void* a, void* b,size_t size_elem) {
 
 	void* temp=(void*)malloc(sizeof(size_elem));
 	memcpy(temp, a, size_elem);
@@ -71,7 +91,7 @@ void UN_swap(void* a, void* b,size_t size_elem) {
 
 // Vector (dinamic array)
 //
-Vector* init_vector() {
+Vector* VectorInit() {
 
 	Vector* vector = malloc(sizeof(Vector));
 	vector->capacity = 2;
@@ -80,27 +100,27 @@ Vector* init_vector() {
 
 	return vector;
 }
-void vector_resize(Vector* self,size_t new_size) {
+void VectorResize(Vector* self,size_t new_size) {
 	self->data = realloc(self->data,new_size*sizeof(Vector_type));
 	self->capacity = new_size;
 	self->size = min(self->size, new_size);
 }
 
-void vector_append(Vector* self,Vector_type elem) {
-	if (self->capacity == self->size) vector_resize(self, self->capacity << 1);
+void VectorAdd(Vector* self,Vector_type elem) {
+	if (self->capacity == self->size) VectorResize(self, self->capacity << 1);
 	self->data[self->size++] = elem;
 }
 
-Vector_type vector_pop(Vector* self) {
-	if ((self->size << 2) + 1 <= self->capacity) vector_resize(self,(self->capacity>>1)+1);
+Vector_type VectorPop(Vector* self) {
+	if ((self->size << 2) + 1 <= self->capacity) VectorResize(self,(self->capacity>>1)+1);
 	return self->data[--self->size];
 }
 
-void clear_vector(Vector* self){
+void VectorClear(Vector* self){
 	self->size = 0;
 }
 
-void free_vector(Vector* self) {
+void VectorFree(Vector* self) {
 	free(self->data);
 	free(self);
 }
@@ -116,7 +136,7 @@ unsigned int hash(int x) {
 
 // Linked List
 //
-Pair init_Pair(unsigned int key, TYPE_OF value) {
+Pair PairInit(unsigned int key, TYPE_OF value) {
 
 	Pair elem;
 	elem.key = key;
@@ -125,7 +145,7 @@ Pair init_Pair(unsigned int key, TYPE_OF value) {
 	return elem;
 }
 
-Node* init_Node(Pair elem) {
+Node* NodeInit(Pair elem) {
 
 	Node* new_node = malloc(sizeof(Node));
 	new_node->elem = elem;
@@ -135,7 +155,7 @@ Node* init_Node(Pair elem) {
 	return new_node;
 }
 
-Node* create_head() {
+Node* NodeHeadCreate() {
 
 	Node* new = malloc(1 * sizeof(Node));
 	new->next = new;
@@ -144,7 +164,7 @@ Node* create_head() {
 	return new;
 }
 
-void append_after(Pair new, Node* dot) {
+void NodeAddAfter(Pair new, Node* dot) {
 
 	Node* new_dot = malloc(1 * sizeof(Node));
 	new_dot->elem = new;
@@ -156,7 +176,7 @@ void append_after(Pair new, Node* dot) {
 	return;
 }
 
-void append_before(Pair new, Node* dot) {
+void NodeAddBefore(Pair new, Node* dot) {
 
 	Node* new_dot = malloc(1 * sizeof(Node));
 	new_dot->elem = new;
@@ -168,7 +188,7 @@ void append_before(Pair new, Node* dot) {
 	return;
 }
 
-Pair del_node(Node* new) {
+Pair NodePop(Node* new) {
 
 	new->prev->next = new->next;
 	new->next->prev = new->prev;
@@ -182,21 +202,21 @@ Pair del_node(Node* new) {
 
 // Binary_Heap
 //
-Heap* init_Heap(cmpf comp) {
+Heap* HeapInit(cmpf comp) {
 	Heap* new_heap = malloc(sizeof(Heap));
 	new_heap->comp = comp;
-	new_heap->vector = init_vector();
+	new_heap->vector = VectorInit();
 	return new_heap;
 }
 
-void sift_up(Heap* self, int index) {
+void HeapSiftUp(Heap* self, int index) {
 
 	int parent_index = (int)((index - 1) / 2);
 	while (index > 0) {
 
 		if (self->comp(&self->vector->data[index],
 			&self->vector->data[parent_index]) < 0) {
-			UN_swap(&self->vector->data[index],
+			UnSwap(&self->vector->data[index],
 				&self->vector->data[parent_index],
 				sizeof(Vector_type));
 			index = parent_index;
@@ -207,7 +227,7 @@ void sift_up(Heap* self, int index) {
 
 }
 
-void sift_down(Heap* self, int index) {
+void HeapSiftDown(Heap* self, int index) {
 
 	int child_index = index * 2 + 1;
 	while (self->vector->size > child_index) {
@@ -219,7 +239,7 @@ void sift_down(Heap* self, int index) {
 
 		if (self->comp(&self->vector->data[index],
 			&self->vector->data[child_index]) > 0) {
-			UN_swap(&self->vector->data[index],
+			UnSwap(&self->vector->data[index],
 				&self->vector->data[child_index],
 				sizeof(Vector_type));
 			index = child_index;
@@ -230,20 +250,33 @@ void sift_down(Heap* self, int index) {
 
 }
 
-void add_to_heap(Heap* self, Vector_type elem) {
-	vector_append(self->vector, elem);
-	sift_up(self, self->vector->size - 1);
+void HeapAdd(Heap* self, Vector_type elem) {
+	VectorAdd(self->vector, elem);
+	HeapSiftUp(self, self->vector->size - 1);
 }
 
-Vector_type extract_min(Heap* self) {
-	UN_swap(&self->vector->data[0], &self->vector->data[self->vector->size - 1], sizeof(Vector_type));
-	Vector_type temp = vector_pop(self->vector);
-	sift_down(self, 0);
+Vector_type HeapExtractMin(Heap* self) {
+	if (self->vector->size == 0) return NULL;
+	UnSwap(&self->vector->data[0], &self->vector->data[self->vector->size - 1], sizeof(Vector_type));
+	Vector_type temp = VectorPop(self->vector);
+	HeapSiftDown(self, 0);
 	return temp;
 }
 
-void free_heap(Heap* self) {
-	free_vector(self->vector);
+void HeapBuild(Heap* self) {
+	for (int i = self->vector->size / 2; i >= 0; i++) HeapSiftDown(self, i);
+}
+
+void HeapMerge(Heap* dist, Heap* sourse) {
+	for (int i = 0; i < sourse->vector->size; i++) {
+		HeapAdd(dist, sourse->vector->data[i]);
+	}
+	HeapBuild(dist);
+	free(sourse);
+}
+
+void FreeHeap(Heap* self) {
+	VectorFree(self->vector);
 	free(self);
 }
 //
@@ -251,7 +284,7 @@ void free_heap(Heap* self) {
 
 // Sorts
 //
-void insertion_sort(int* arr, int num) {
+void InsertionSort(int* arr, int num) {
 	int temp;
 	for (int i = 1; i < num; i++) {
 		temp = arr[i];
@@ -264,7 +297,7 @@ void insertion_sort(int* arr, int num) {
 	}
 }
 
-void selection_sort(int* arr, int number) {
+void CelectionSort(int* arr, int number) {
 
 	for (int i = 0; i < number - 1; i++) {
 		int lowest = i;
@@ -278,7 +311,7 @@ void selection_sort(int* arr, int number) {
 	}
 }
 
-int UN_partition_po_pivu(void* arr, size_t size_arr, size_t size_elem, void* pivot, cmpf cmp) {
+int UnPartition(void* arr, size_t size_arr, size_t size_elem, void* pivot, cmpf cmp) {
 	int current;
 	int i = 0;
 	int j = size_arr - 1;
@@ -313,7 +346,7 @@ int UN_partition_po_pivu(void* arr, size_t size_arr, size_t size_elem, void* piv
 	return j + 1;
 }
 
-void UN_quick_sort(void* arr, size_t size_arr, size_t size_elem, cmpf cmp) {
+void UnQuickSort(void* arr, size_t size_arr, size_t size_elem, cmpf cmp) {
 
 	if (size_arr <= 1) {
 		return;
@@ -321,15 +354,15 @@ void UN_quick_sort(void* arr, size_t size_arr, size_t size_elem, cmpf cmp) {
 	void* pivot = malloc(size_elem);
 	int ran = (int)rand() % size_arr;
 	memcpy(pivot, (void*)((char*)arr + ran * size_elem), size_elem);
-	int bound = UN_partition_po_pivu(arr, size_arr, size_elem, pivot, cmp);
+	int bound = UnPartition(arr, size_arr, size_elem, pivot, cmp);
 	free(pivot);
-	UN_quick_sort(arr, bound, size_elem, cmp);
-	UN_quick_sort((void*)((char*)arr + bound * size_elem), size_arr - bound, size_elem, cmp);
+	UnQuickSort(arr, bound, size_elem, cmp);
+	UnQuickSort((void*)((char*)arr + bound * size_elem), size_arr - bound, size_elem, cmp);
 
 	return;
 }
 
-int partition_po_pivu(int* arr, int len, int pivot) {
+int CustomPartition(int* arr, int len, int pivot) {
 
 	int i = 0;
 	int j = len - 1;
@@ -366,7 +399,7 @@ int partition_po_pivu(int* arr, int len, int pivot) {
 	return j + 1;
 }
 
-int partition_piva(int* arr, int left, int right) {
+int Partition(int* arr, int left, int right) {
 	int pivo = arr[(left + right) / 2];
 	int i = left, j = right;
 	while (i <= j) {
@@ -380,20 +413,20 @@ int partition_piva(int* arr, int left, int right) {
 	return j;
 }
 
-void quick_sort(int* arr, int len) {
+void QuickSort(int* arr, int len) {
 
 	if (len <= 1) {
 		return;
 	}
 	int ran = (int)rand() % len;
-	int bound = partition_po_pivu(arr, len, arr[ran]);
-	quick_sort(arr, bound);
-	quick_sort(arr + bound, len - bound);
+	int bound = CustomPartition(arr, len, arr[ran]);
+	QuickSort(arr, bound);
+	QuickSort(arr + bound, len - bound);
 
 	return;
 }
 
-void buble_sort(int* arr, int arr_len) {
+void BubbleSort(int* arr, int arr_len) {
 
 	for (int i = 1; i < arr_len; i++) {
 		for (int j = 0; j < arr_len - i; j++) {
@@ -409,7 +442,7 @@ void buble_sort(int* arr, int arr_len) {
 	return;
 }
 
-void merge(int* arr1, int* arr2, int len1, int len2, int* res) {
+void ArrayMerge(int* arr1, int* arr2, int len1, int len2, int* res) {
 
 	int i = 0, j = 0;
 	while (i < len1 && j < len2) {
@@ -432,7 +465,7 @@ void merge(int* arr1, int* arr2, int len1, int len2, int* res) {
 	return;
 }
 
-void merge_sort(int* arr, int len) {
+void MergeSort(int* arr, int len) {
 	if (len <= 1) {
 		return;
 	}
@@ -440,15 +473,15 @@ void merge_sort(int* arr, int len) {
 	int* arr2 = len / 2 + arr;
 	int n1 = len / 2;
 	int n2 = len - n1;
-	merge_sort(arr1, n1);
-	merge_sort(arr2, n2);
+	MergeSort(arr1, n1);
+	MergeSort(arr2, n2);
 	int* res = malloc(len * sizeof(int));
-	merge(arr1, arr2, n1, n2, res);
+	ArrayMerge(arr1, arr2, n1, n2, res);
 	memmove(arr, res, len * sizeof(int));
 	free(res);
 }
 
-void counting_sort(pairs* arr, int len, int range) {
+void PairsCountingSort(pairs* arr, int len, int range) {
 
 	int* new_len = calloc(range + 2, sizeof(int));
 	for (int i = 0; i < len; i++) {
@@ -467,12 +500,78 @@ void counting_sort(pairs* arr, int len, int range) {
 	free(new_arr);
 	free(new_len);
 }
+
+void RadixSort(char** arr, size_t arr_size, size_t length) {
+
+	int start = 'a';
+	int end = 'z';
+
+	char** res = malloc(arr_size * sizeof(char*));
+	int* count = calloc((end - start + 1), sizeof(int));
+
+	for (int j = length - 1; j >= 0; j--) {
+		memset(count, 0, (end - start + 1) * sizeof(int));
+		for (size_t i = 0; i < arr_size; i++) {
+			count[arr[i][j] - start]++;
+		}
+
+		for (size_t i = 1; i < end - start + 1; i++) {
+			count[i] += count[i - 1];
+		}
+
+		for (int i = arr_size - 1; i >= 0; i--) {
+			res[--count[arr[i][j] - start]] = arr[i];
+		}
+
+		for (size_t i = 0; i < arr_size; i++) {
+			arr[i] = res[i];
+		}
+
+	}
+	free(res);
+	free(count);
+}
+
+void FlipFlopRadixSort(char** arr, size_t arr_size, size_t length) {
+
+	int start = 'a';
+	int end = 'z';
+
+	char** res = malloc(arr_size * sizeof(char*));
+	int* count = calloc((end - start + 1), sizeof(int));
+	
+	int coin = 0;
+
+	char** flipflop[2] = { arr,res };
+	char** from;
+	char** to;
+	for (int j = length - 1; j >= 0; j--) {
+		from = flipflop[coin];
+		to = flipflop[coin ^ 1];
+		memset(count, 0, (end - start + 1) * sizeof(int));
+		for (size_t i = 0; i < arr_size; i++) {
+			count[from[i][j] - start]++;
+		}
+
+		for (size_t i = 1; i < end - start + 1; i++) {
+			count[i] += count[i - 1];
+		}
+
+		for (int i = arr_size - 1; i >= 0; i--) {
+			to[--count[from[i][j] - start]] = from[i];
+		}
+		coin ^= 1;
+	}
+	if (coin) memmove(arr, res, arr_size * sizeof(char*));
+	free(res);
+	free(count);
+}
 //
 
 
 // Searching algorythms
 //
-void* bin_search(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
+void* BinSearch(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
 	size_t i = 0, j = size_arr - 1;
 	size_t middle;
 	void* answer = 0;
@@ -498,7 +597,7 @@ void* bin_search(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf 
 	return comp(answer, elem) == 0 ? answer : NULL;
 }
 
-void* bin_search_up(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
+void* BinSearchUp(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
 	size_t i = 0, j = size_arr - 1;
 	size_t middle;
 	void* answer = 0;
@@ -520,7 +619,7 @@ void* bin_search_up(void* elem, void* arr, size_t size_arr, size_t size_elem, cm
 	return comp(answer, elem) == 0 ? answer : NULL;
 }
 
-void* bin_search_down(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
+void* BinSearchDown(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
 	size_t i = 0, j = size_arr - 1;
 	size_t middle;
 	void* answer = 0;
@@ -538,7 +637,7 @@ void* bin_search_down(void* elem, void* arr, size_t size_arr, size_t size_elem, 
 	return comp(answer, elem) == 0 ? answer : NULL;
 }
 
-void* lower_bound(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
+void* LowerBound(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
 	size_t i = 0, j = size_arr - 1;
 	size_t middle;
 	void* answer = 0;
@@ -556,10 +655,10 @@ void* lower_bound(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf
 	return answer;
 }
 
-int Find_K_Statistics(int* arr, int number, int point) {
+int KStatistics(int* arr, int number, int point) {
 	int left_arr = 0, right_arr = number - 1;
 	while (1) {
-		int mid = partition_piva(arr, left_arr, right_arr);
+		int mid = Partition(arr, left_arr, right_arr);
 		if (left_arr == right_arr) {
 			return arr[mid];
 		}
@@ -574,7 +673,7 @@ int Find_K_Statistics(int* arr, int number, int point) {
 //
 
 
-void eraosphen(int pivot, Node* Ans) {
+void Eraosphen(int pivot, Node* Ans) {
 
 	int* arr = malloc(pivot * sizeof(int));
 	for (size_t i = 0; i < pivot; i++) {
@@ -586,7 +685,7 @@ void eraosphen(int pivot, Node* Ans) {
 			for (size_t j = i * 2; j < pivot; j += i) arr[j] = 0;
 		}
 	}
-	for (size_t i = 0; i < pivot; i++) if (arr[i] != 0) append_after(init_Pair(1, arr[i]), Ans);
+	for (size_t i = 0; i < pivot; i++) if (arr[i] != 0) NodeAddAfter(PairInit(1, arr[i]), Ans);
 
 }
 
@@ -630,11 +729,11 @@ void append_pair(hash_table* HT, Pair pair) {
 				return;
 			}
 		}
-		append_after(pair, HT->arr[idex]);
+		NodeAddAfter(pair, HT->arr[idex]);
 	}
 	else {
-		HT->arr[idex] = create_head();
-		append_after(pair, HT->arr[idex]);
+		HT->arr[idex] = NodeHeadCreate();
+		NodeAddAfter(pair, HT->arr[idex]);
 	}
 
 	return;
@@ -683,7 +782,7 @@ void del_elem(int key, hash_table* HT) {
 	if (temp != 0) {
 		for (Node* t = HT->arr[index]->next; t != HT->arr[index]; t = t->next) {
 			if (key == t->elem.key) {
-				del_node(t);
+				NodePop(t);
 				return;
 			}
 		}
@@ -696,9 +795,9 @@ void del_HT(hash_table* HT) {
 	for (int i = 0; i < HT->size; i++) {
 		if (HT->arr[i] != 0) {
 			for (Node* t = HT->arr[i]->next; t != HT->arr[i]; t = HT->arr[i]->next) {
-				del_node(t);
+				NodePop(t);
 			}
-			del_node(HT->arr[i]);
+			NodePop(HT->arr[i]);
 		}
 	}
 	free(HT->arr);
@@ -714,7 +813,7 @@ typedef struct NNodes {
 
 } NNode;
 
-NNode* init_Node(int key, void* value) {
+NNode* NodeInit(int key, void* value) {
 
 	NNode* Node = malloc(sizeof(NNode));
 	Node->key = key;
@@ -728,7 +827,7 @@ NNode* init_Node(int key, void* value) {
 NNode* append_root(int key, void* value, NNode* root) {
 
 	if (root == 0) {
-		root = init_Node(key, value);
+		root = NodeInit(key, value);
 		return root;
 	}
 
@@ -905,7 +1004,21 @@ int main() {
 
 // Comparators
 //
-int compare_for_E(void* x, void* y) {
+
+int comparePair(Pair** x, Pair** y) {
+
+	if ((*x)->value < (*y)->value) {
+		return -1;
+	}
+	else if ((*x)->value > (*y)->value) {
+		return 1;
+	}
+	else {
+		return 0;
+	}
+}
+
+int comparePar(void* x, void* y) {
 	if ((((par*)x)->points) < (((par*)y)->points)) {
 		return 1;
 	}
@@ -923,7 +1036,7 @@ int compare_for_E(void* x, void* y) {
 	}
 }
 
-int compare_for_st(void* x, void* y) {
+int compareSt(void* x, void* y) {
 	if ((((st*)x)->start) < (((st*)y)->start)) {
 		return -1;
 	}
@@ -941,12 +1054,25 @@ int compare_for_st(void* x, void* y) {
 	}
 }
 
-int compare_int(void* x, void* y) {
+int compareInt(void* x, void* y) {
 
 	if (*((int*)x) < (*(int*)y)) {
 		return -1;
 	}
 	else if (*((int*)x) > (*(int*)y)) {
+		return 1;
+	}
+	else {
+		return 0;
+	}
+}
+
+int compareChr(size_t* context,char** x,char** y) {
+
+	if ((* x)[*context] < ((*y)[*context])) {
+		return -1;
+	}
+	else if ((*x)[*context] > ((*y)[*context])) {
 		return 1;
 	}
 	else {
@@ -1002,10 +1128,10 @@ void solver_4(Node* stack,char* string) {
 		scanf("%d", &num);
 		temp = stack->prev->elem.value;
 		num = max(num, temp);
-		append_before(init_Pair(1, num), stack);
+		NodeAddBefore(PairInit(1, num), stack);
 	}
 	else if (op == minus) {
-		del_node(stack->prev);
+		NodePop(stack->prev);
 	}
 }
 
@@ -1014,12 +1140,12 @@ void solver_3(Node* stack,char* string) {
 	operand op = is_operand(string);
 
 	if (op == not_operand) {
-		append_before(init_Pair(1, atoi(string)), stack);
+		NodeAddBefore(PairInit(1, atoi(string)), stack);
 	}
 	else {
-		Pair element2 = del_node(stack->prev);
-		Pair element1 = del_node(stack->prev);
-		append_before(init_Pair(1, do_math(element1.value, element2.value, op)), stack);
+		Pair element2 = NodePop(stack->prev);
+		Pair element1 = NodePop(stack->prev);
+		NodeAddBefore(PairInit(1, do_math(element1.value, element2.value, op)), stack);
 	}
 }
 
@@ -1070,18 +1196,74 @@ long long maximal_among_minimal(int* arr,int arr_size,int count_jord) {
 
 //  MAIN
 int main() {
-	//freopen("input.txt", "r", stdin);
-	
-	Node* Head = create_head();
-	eraosphen(10000, Head);
+	freopen("input.txt", "r", stdin);
+	/*
+	Node* Head = NodeHeadCreate();
+	Eraosphen(10000000, Head);
 	while (Head->next != Head) {
-		Pair temp = del_node(Head->prev);
+		Pair temp = NodePop(Head->prev);
 		int res = temp.value;
 		printf("%d ", res);
+	}*/
+	int number, length, phazeNumber;
+	
+	scanf("%d %d %d", &number, &length, &phazeNumber);
+	char** arr = malloc(number * sizeof(char*));
+	for (size_t i = 0; i < number; i++){
+		arr[i] = malloc((length+1) * sizeof(char));
+		scanf("%s",arr[i]);
+	}
+	
+	CustomedFlipFlopRadixSort(arr, number,length,phazeNumber);
+
+	for (size_t i = 0; i < number; i++){
+		printf("%s\n", arr[i]);
 	}
 
 	return 0;
 }
+
+
+
+// SOME SOLVED PROBLEMS
+
+//CustomedRadixSort (sorts only %phaze times)
+/*
+void CustomedFlipFlopRadixSort(char** arr, size_t arr_size, int length,int phaze) {
+
+	int start = 'a';
+	int end = 'z';
+
+	char** res = malloc(arr_size * sizeof(char*));
+	int* count = calloc((end - start + 1), sizeof(int));
+
+	int coin = 0;
+
+	char** flipflop[2] = { arr,res };
+	char** from;
+	char** to;
+	for (int j = length - 1; j >= length-phaze; j--) {
+		from = flipflop[coin];
+		to = flipflop[coin ^ 1];
+		memset(count, 0, (end - start + 1) * sizeof(int));
+		for (size_t i = 0; i < arr_size; i++) {
+			count[from[i][j] - start]++;
+		}
+
+		for (size_t i = 1; i < end - start + 1; i++) {
+			count[i] += count[i - 1];
+		}
+
+		for (int i = arr_size - 1; i >= 0; i--) {
+			to[--count[from[i][j] - start]] = from[i];
+		}
+		coin ^= 1;
+	}
+	if (coin) memmove(arr, res, arr_size * sizeof(char*));
+	free(res);
+	free(count);
+}
+*/
 
 //Array Division (100/100)
 /*
@@ -1142,7 +1324,7 @@ int number, walls;
 	for (int j = 1; j <= walls; j++) {
 		double hu = (double)j * summary / walls;
 		int temp = ceil(hu);
-		int index = (int*) lower_bound(&temp, pref, number + 1, sizeof(int), compare_int) - pref;
+		int index = (int*) LowerBound(&temp, pref, number + 1, sizeof(int), compareInt) - pref;
 
 		if (index>1 && abs(hu - pref[index - 1]) <= abs(pref[index] - hu)) {
 			index -= 1;
@@ -1179,8 +1361,8 @@ int number, walls;
 		scanf("%d", &elem);
 		arr2[i] = elem;
 	}
-	UN_quick_sort(arr1, number1, sizeof(int), compare_int);
-	UN_quick_sort(arr2, number2, sizeof(int), compare_int);
+	UnQuickSort(arr1, number1, sizeof(int), compareInt);
+	UnQuickSort(arr2, number2, sizeof(int), compareInt);
 	int i = 0, j = 0;
 	int rem;
 	while (i < number1 && j < number2) {
@@ -1220,8 +1402,8 @@ int number, walls;
 		scanf("%d", &elem);
 		arr2[i] = elem;
 	}
-	UN_quick_sort(arr1, number1, sizeof(int), compare_int);
-	UN_quick_sort(arr2, number2, sizeof(int), compare_int);
+	UnQuickSort(arr1, number1, sizeof(int), compareInt);
+	UnQuickSort(arr2, number2, sizeof(int), compareInt);
 	int i1 = 0, j1 = 0, counter1 = 0;
 	int i2 = 0, j2 = 0, counter2 = 0;
 	int log1 = 0, log2 = 0,log3;
@@ -1306,7 +1488,7 @@ int main() {
 		arr[i].end = end + 1;
 	}
 
-	UN_quick_sort(arr, number, sizeof(st), compare_for_st);
+	UnQuickSort(arr, number, sizeof(st), compare_for_st);
 
 	int summary = arr[0].end - arr[0].start;
 	int i = 1;
