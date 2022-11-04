@@ -1,3 +1,41 @@
+п»ї
+
+/**
+Het is goed dat je bent gekomen!
+
+
+           Hello!
+
+
+This is my main file with main part of 
+things I've already writen for this moment.
+
+Here you can find such #data structures# as:
+1) Queue
+2) Stack
+3) Linked List (cyclic doubly linked)
+4) Vector (dinamic array)
+5) Priority Queue
+6) Heap (Binary)
+7) Hash Table 
+8) Tree (not completed)
+
+Such #algorithms# as:
+1) Swaps
+2) Sorts
+3) Searching algorithms (Binary Search and K-Statistics) 
+
+
+
+In the end of this file there are some
+solved problems, which I decided to save
+just for myself.
+
+
+Use!
+*/
+
+
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
@@ -587,11 +625,11 @@ void* BinSearch(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf c
 			answer = (char*)arr + middle * size_elem;
 			break;
 		}
-		// чтобы получить индекс элемента (на который указывает результат функции)
-		// можно пользоваться "формулой" (mid-arr)/size_elem 
-		// для пользовательских типов данных достаточно mid-arr 
-		//(в ином случае возвращается количество байт на промежутке mid-arr, 
-		//из-за чего нужно разделить на тип)      (через char(...))
+		// To get the index of the element (pointed to by the result of the function),
+		// you can use the "formula" (mid-arr)/size_elem.
+		// For custom data types is enough mid-arr,
+		// (otherwise, the number of bytes in the interval is returned mid-arr, 
+		// because of what you need to divide by type)      (by char(...))
 	}
 
 	return comp(answer, elem) == 0 ? answer : NULL;
@@ -1205,20 +1243,8 @@ int main() {
 		int res = temp.value;
 		printf("%d ", res);
 	}*/
-	int number, length, phazeNumber;
 	
-	scanf("%d %d %d", &number, &length, &phazeNumber);
-	char** arr = malloc(number * sizeof(char*));
-	for (size_t i = 0; i < number; i++){
-		arr[i] = malloc((length+1) * sizeof(char));
-		scanf("%s",arr[i]);
-	}
-	
-	CustomedFlipFlopRadixSort(arr, number,length,phazeNumber);
 
-	for (size_t i = 0; i < number; i++){
-		printf("%s\n", arr[i]);
-	}
 
 	return 0;
 }
@@ -1444,23 +1470,23 @@ int number, walls;
 
 //Garland
 /*
-# Линейные рекурентные соотношения(через калькулятор)
+# Linear recurrences (via calculator):
 # f(n) = 2 * f(n - 1) + 2 - f(n - 2)
 # f(n) = n * (c2 - 1 + n) + c1
 # f(1) = c2 + c1 = A <=> c1 = A - c2
 # f(n) = n ^ 2 + n * (c2 - 1) + A - c2
 
-# ищем миниму на отрезке[1, number]
+# Looking for a minimum on the segment [1, number]:
 # 1 <= n <= number
 # n = 1 / 2 - c2 / 2
 #      |
 # 1 - 2 * number <= c2 <= -1
 
-# минимум этой функции(строчка выше) достгается при n = -(c2 - 1) / 2
-# можно подставить и получить это минимальное значение
-# однако n - целое и принадлежит от 1 до number, так что
-# необходимо узнать значения около этой точки
-# f(n) = c2 * (n - 1) + (n - 1) * n + A - фин.формула
+# The minimum of this function (the line above) is reached at n = -(c2 - 1) / 2.
+# You can substitute and get this minimum value.
+# However n - integer and belongs from 1 to number, so
+# you need to know the values вЂ‹вЂ‹around this point:
+# f(n) = c2 * (n - 1) + (n - 1) * n + A - final formula
 N = list(map(float, input().split()))
 number = N[0]
 A = N[1]
