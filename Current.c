@@ -18,7 +18,7 @@ Here you can find such #data structures# as:
 5) Priority Queue
 6) Heap (Binary)
 7) Hash Table 
-8) Tree (not completed)
+8) Tree
 
 Such #algorithms# as:
 1) Swaps
@@ -46,34 +46,17 @@ Use!
 #include <limits.h>
 #define max(a,b) (((a) > (b)) ? (a):(b))
 #define min(a,b) (((a) < (b)) ? (a):(b))
-
 #define BufSize 50
 
-#define TYPE_OF int
-#define Vector_type int //Pair*
-
-
-
 typedef int (*cmpf) (void*, void*);
+
+
+//Some rubish
+//
 typedef struct pairss {
 	int key;
 	char* value;
 } pairs;
-typedef struct Pairs {
-	unsigned int key;
-	TYPE_OF value;
-} Pair;
-typedef struct HeapPairs {
-	int value;
-	size_t heapIndex;
-}HeapPair;
-typedef struct Nodes {
-
-	Pair elem;
-	struct Nodes* next;
-	struct Nodes* prev;
-
-} Node;
 typedef struct starts_ends {
 	int start;
 	int end;
@@ -82,17 +65,8 @@ typedef struct pars {
 	int id;
 	int points;
 }par;
-typedef struct Vectors {
+//
 
-	size_t size;
-	size_t capacity;
-	Vector_type* data;
-
-} Vector;
-typedef struct Heaps {
-	Vector* vector;
-	cmpf comp;
-}Heap;
 
 
 // Swaps
@@ -101,18 +75,6 @@ void swap(int* a, int* b) {
 	int temp = *a;
 	*a = *b;
 	*b = temp;
-}
-
-void SpecificSwap(HeapPair** a, HeapPair** b) {
-
-	Pair* temp1 = *a;
-	*a = *b;
-	*b = temp1;
-
-	int temp2 = (*a)->heapIndex;
-	(*a)->heapIndex = (*b)->heapIndex;
-	(*b)->heapIndex = temp2;
-
 }
 
 void UnSwap(void* a, void* b,size_t size_elem) {
@@ -129,27 +91,38 @@ void UnSwap(void* a, void* b,size_t size_elem) {
 
 // Vector (dinamic array)
 //
+#define VectorType int
+
+typedef struct Vectors {
+
+	size_t size;
+	size_t capacity;
+	VectorType* data;
+
+} Vector;
+
 Vector* VectorInit() {
 
 	Vector* vector = malloc(sizeof(Vector));
 	vector->capacity = 2;
 	vector->size = 0;
-	vector->data = malloc(vector->capacity*sizeof(Vector_type));
+	vector->data = malloc(vector->capacity*sizeof(VectorType));
 
 	return vector;
 }
+
 void VectorResize(Vector* self,size_t new_size) {
-	self->data = realloc(self->data,new_size*sizeof(Vector_type));
+	self->data = realloc(self->data,new_size*sizeof(VectorType));
 	self->capacity = new_size;
 	self->size = min(self->size, new_size);
 }
 
-void VectorAdd(Vector* self,Vector_type elem) {
+void VectorAdd(Vector* self,VectorType elem) {
 	if (self->capacity == self->size) VectorResize(self, self->capacity << 1);
 	self->data[self->size++] = elem;
 }
 
-Vector_type VectorPop(Vector* self) {
+VectorType VectorPop(Vector* self) {
 	if ((self->size << 2) + 1 <= self->capacity) VectorResize(self,(self->capacity>>1)+1);
 	return self->data[--self->size];
 }
@@ -174,16 +147,33 @@ unsigned int hash(int x) {
 
 // Linked List
 //
-Pair PairInit(unsigned int key, TYPE_OF value) {
+#define ListValueType int
 
-	Pair elem;
+typedef struct ListPairs {
+
+	unsigned int key;
+	ListValueType value;
+
+} ListPair;
+
+typedef struct Nodes {
+
+	ListPair elem;
+	struct Nodes* next;
+	struct Nodes* prev;
+
+} Node;
+
+ListPair PairInit(unsigned int key, ListValueType value) {
+
+	ListPair elem;
 	elem.key = key;
 	elem.value = value;
 
 	return elem;
 }
 
-Node* NodeInit(Pair elem) {
+Node* NodeInit(ListPair elem) {
 
 	Node* new_node = malloc(sizeof(Node));
 	new_node->elem = elem;
@@ -202,7 +192,7 @@ Node* NodeHeadCreate() {
 	return new;
 }
 
-void NodeAddAfter(Pair new, Node* dot) {
+void NodeAddAfter(ListPair new, Node* dot) {
 
 	Node* new_dot = malloc(1 * sizeof(Node));
 	new_dot->elem = new;
@@ -214,7 +204,7 @@ void NodeAddAfter(Pair new, Node* dot) {
 	return;
 }
 
-void NodeAddBefore(Pair new, Node* dot) {
+void NodeAddBefore(ListPair new, Node* dot) {
 
 	Node* new_dot = malloc(1 * sizeof(Node));
 	new_dot->elem = new;
@@ -226,11 +216,11 @@ void NodeAddBefore(Pair new, Node* dot) {
 	return;
 }
 
-Pair NodePop(Node* new) {
+ListPair NodePop(Node* new) {
 
 	new->prev->next = new->next;
 	new->next->prev = new->prev;
-	Pair temp = new->elem;
+	ListPair temp = new->elem;
 	free(new);
 
 	return temp;
@@ -240,6 +230,18 @@ Pair NodePop(Node* new) {
 
 // Binary_Heap
 //
+typedef struct Heaps {
+
+	Vector* vector;
+	cmpf comp;
+
+}Heap;
+
+typedef struct HeapPairs {
+	int value;
+	size_t heapIndex;
+}HeapPair;
+
 Heap* HeapInit(cmpf comp) {
 	Heap* new_heap = malloc(sizeof(Heap));
 	new_heap->comp = comp;
@@ -256,7 +258,7 @@ void HeapSiftUp(Heap* self, int index) {
 			&self->vector->data[parent_index]) < 0) {
 			UnSwap(&self->vector->data[index],
 				&self->vector->data[parent_index],
-				sizeof(Vector_type));
+				sizeof(VectorType));
 			index = parent_index;
 			parent_index = (int)((parent_index - 1) / 2);
 		}
@@ -279,7 +281,7 @@ void HeapSiftDown(Heap* self, int index) {
 			&self->vector->data[child_index]) > 0) {
 			UnSwap(&self->vector->data[index],
 				&self->vector->data[child_index],
-				sizeof(Vector_type));
+				sizeof(VectorType));
 			index = child_index;
 			child_index = index * 2 + 1;
 		}
@@ -288,15 +290,15 @@ void HeapSiftDown(Heap* self, int index) {
 
 }
 
-void HeapAdd(Heap* self, Vector_type elem) {
+void HeapAdd(Heap* self, VectorType elem) {
 	VectorAdd(self->vector, elem);
 	HeapSiftUp(self, self->vector->size - 1);
 }
 
-Vector_type HeapExtractMin(Heap* self) {
+VectorType HeapExtractMin(Heap* self) {
 	if (self->vector->size == 0) return NULL;
-	UnSwap(&self->vector->data[0], &self->vector->data[self->vector->size - 1], sizeof(Vector_type));
-	Vector_type temp = VectorPop(self->vector);
+	UnSwap(&self->vector->data[0], &self->vector->data[self->vector->size - 1], sizeof(VectorType));
+	VectorType temp = VectorPop(self->vector);
 	HeapSiftDown(self, 0);
 	return temp;
 }
@@ -316,6 +318,506 @@ void HeapMerge(Heap* dist, Heap* sourse) {
 void FreeHeap(Heap* self) {
 	VectorFree(self->vector);
 	free(self);
+}
+
+void HeapSwap(HeapPair** a, HeapPair** b) {
+
+	ListPair* temp1 = *a;
+	*a = *b;
+	*b = temp1;
+
+	int temp2 = (*a)->heapIndex;
+	(*a)->heapIndex = (*b)->heapIndex;
+	(*b)->heapIndex = temp2;
+
+}
+//
+
+
+
+//Hash table
+//
+#define HashTableNodeType char*
+
+typedef struct HashTableNodes {
+
+	HashTableNodeType value;
+	int key;
+	struct HashTableNodes* next;
+	struct HashTableNodes* prev;
+
+}HashTableNode;
+
+typedef struct HashTables {
+
+	int size;
+	HashTableNode** arr;
+
+}HashTable;
+
+HashTable* HashTableInit(int size) {
+	HashTable* self = malloc(sizeof(HashTable));
+
+	self->size = size;
+	self->arr = calloc(size, sizeof(HashTableNode*));
+	
+	return self;
+}
+
+
+/*
+typedef struct Pairs {
+	int key;
+	char* value;
+} Pair;
+
+typedef struct Nodes {
+	Pair elem;
+	struct Nodes* next;
+	struct Nodes* prev;
+} Node;
+
+typedef struct hash_tabels {
+	int size;
+	Node** arr;
+}hash_table;
+
+hash_table* init_HT(int size) {
+
+	hash_table* HT = malloc(sizeof(hash_table));
+	HT->size = size;
+	HT->arr = calloc(size, sizeof(Node*));
+
+	return HT;
+}
+
+void append_pair(hash_table* HT, Pair pair) {
+
+	unsigned int num = hash(pair.key);
+	unsigned int idex = num % HT->size;
+
+	if (HT->arr[idex] != 0) {
+		for (Node* temp = HT->arr[idex]->next; temp != HT->arr[idex]; temp = temp->next) {
+			if (pair.key == temp->elem.key) {
+				temp->elem.key = pair.key;
+				return;
+			}
+		}
+		NodeAddAfter(pair, HT->arr[idex]);
+	}
+	else {
+		HT->arr[idex] = NodeHeadCreate();
+		NodeAddAfter(pair, HT->arr[idex]);
+	}
+
+	return;
+}
+
+char** get_value(hash_table* HT, int key) {
+
+	unsigned int new = hash(key);
+	unsigned int index = new % HT->size;
+
+	Node* temp = HT->arr[index];
+	if (temp != 0) {
+		for (Node* t = HT->arr[index]->next; t != HT->arr[index]; t = t->next) {
+			if (key == t->elem.key) {
+				return &t->elem.value;
+			}
+		}
+	}
+
+	return NULL;
+}
+
+char contains_key(hash_table* HT, int key) {
+
+	unsigned int new = hash(key);
+	unsigned int index = new % HT->size;
+
+	Node* temp = HT->arr[index];
+	if (temp != 0) {
+		for (Node* t = HT->arr[index]->next; t != HT->arr[index]; t = t->next) {
+			if (key == t->elem.key) {
+				return 1;
+			}
+		}
+	}
+
+	return 0;
+}
+
+void del_elem(int key, hash_table* HT) {
+
+	unsigned int new = hash(key);
+	unsigned int index = new % HT->size;
+
+	Node* temp = HT->arr[index];
+	if (temp != 0) {
+		for (Node* t = HT->arr[index]->next; t != HT->arr[index]; t = t->next) {
+			if (key == t->elem.key) {
+				NodePop(t);
+				return;
+			}
+		}
+	}
+
+	return;
+}
+
+void del_HT(hash_table* HT) {
+	for (int i = 0; i < HT->size; i++) {
+		if (HT->arr[i] != 0) {
+			for (Node* t = HT->arr[i]->next; t != HT->arr[i]; t = HT->arr[i]->next) {
+				NodePop(t);
+			}
+			NodePop(HT->arr[i]);
+		}
+	}
+	free(HT->arr);
+	free(HT);
+}
+
+
+
+*/
+
+
+// Tree
+//
+#define TreeValueType int
+
+typedef struct TreeNodes{
+	unsigned int key;
+	TreeValueType value;
+	struct TreeNodes* left;
+	struct TreeNodes* right;
+	
+}TreeNode;
+
+typedef struct _Trees {
+	TreeNode* root;
+}Tree;
+
+Tree* TreeInit() {
+	Tree* self = malloc(sizeof(Tree));
+	self->root = 0;
+	return self;
+}
+
+TreeNode* TreeNodeInit(unsigned int key, TreeValueType value) {
+
+	TreeNode* TNode = malloc(sizeof(TreeNode));
+	TNode->value = value;
+	TNode->key = key;
+	TNode->left = NULL;
+	TNode->right = NULL;
+
+	return TNode;
+}
+
+TreeNode* _TreeAddNode(TreeNode* Root,TreeValueType value, unsigned int key) {
+
+	if (Root == 0) {
+		TreeNode* NewNode = TreeNodeInit(key, value);
+		return NewNode;
+	}
+	if (key < Root->key) {
+		Root->left = _TreeAddNode(Root->left,value,key);
+	}
+	if (key > Root->key) {
+		Root->right = _TreeAddNode(Root->right,value,key);
+	}
+
+	return Root;
+}
+
+void TreeAdd(Tree* self, TreeValueType value, unsigned int key) {
+	self->root = _TreeAddNode(self->root, value, key);
+}
+
+TreeNode* TreeFindNode(TreeNode* Root,unsigned int key) {
+	if (Root == NULL) return 0;
+	if (key == Root->key) return Root;
+	TreeNode* found;
+
+	if (key < Root->key) found = TreeFindNode(Root->left, key);
+	else found = TreeFindNode(Root->right, key);
+
+	return found;
+}
+
+TreeNode* _TreeNodeRemove(TreeNode* root,unsigned int key) {
+	if (root == 0) return 0;
+
+	if (root->key == key) {
+
+		TreeNode* temp = root;
+
+		if (root->left == NULL && root->right == NULL) {
+			free(root);
+			temp = 0;
+		}
+		else if (root->right == NULL) {
+			temp = root->left;
+			free(root);
+			
+		}
+		else if (root->left == NULL) {
+			temp = root->right;
+			free(root);
+		
+		}
+		else {
+
+			TreeNode* end = root->left;
+			while (end->right != NULL) {
+				end = end->right;
+			}
+
+			TreeValueType val = temp->value;
+			unsigned int k = temp->key;
+			temp->value = end->value;
+			temp->key = end->key;
+			end->key = k;
+			end->value = val;
+
+			root->left = _TreeNodeRemove(root->left, key);
+
+		}
+		
+		return temp;
+
+	}
+
+	if (key < root->key) {
+		root->left = _TreeNodeRemove(root->left,key);
+	}
+	if (key > root->key) {
+		root->right = _TreeNodeRemove(root->right, key);
+	}
+	return root;
+}
+
+void TreeNodeRemove(Tree* self,unsigned int key) {
+	self->root = _TreeNodeRemove(self->root, key);
+}
+
+int TreeCount(Tree*self) {
+	if (self->root == 0) return 0;
+
+	return TreeCount(self->root->left) + TreeCount(self->root->right) + 1;
+}
+
+typedef struct TreeArrayPairs {
+	TreeValueType value;
+	unsigned int key;
+}TreeArrayPair;
+
+void _TreeConvToArray(TreeNode* root, TreeArrayPair* arr, int* i) {
+	if (root == 0) return;
+
+	_TreeConvToArray(root->left, arr, i);
+
+	arr[*i].key = root->key;
+	arr[*i].value = root->value;
+	*i++;
+
+	_TreeConvToArray(root->right, arr, i);
+}
+
+TreeArrayPair* TreeToArray(Tree* self) {
+	int i = 0;
+	int size = TreeCount(self);
+	TreeArrayPair* arr = malloc(size * sizeof(TreeArrayPair));
+	_TreeConvToArray(self->root, arr, &i);
+	return arr;
+}
+
+void TreeDelete(Tree* self) {
+	if (self->root == 0) return;
+
+	TreeDelete(self->root->left);
+	TreeDelete(self->root->right);
+	free(self->root);
+}
+//
+
+
+//main
+/*
+#define FST 1
+
+#if FST!=1
+int main() {
+	freopen("input.txt", "r", stdin);
+	freopen("output.txt", "w", stdout);
+	int n;
+	int range;
+	scanf("%d", &n);
+	scanf("%d", &range);
+	pair* arr = malloc(n * sizeof(pair));
+	for (int i = 0; i < n; i++) {
+		int num;
+		arr[i].value =malloc(4*sizeof(char));
+		scanf("%d ", &num);
+		for (int j = 0; j < 3; j++) {
+			scanf("%c", &arr[i].value[j]);
+			}
+		arr[i].value[3] = 0;
+
+		arr[i].key = num;
+	}
+
+
+
+	//for (size_t i = 0; i < n; i++)
+	//{
+	//	free(arr[i].value);
+	//}
+	//free(arr);
+
+
+
+	return 0;
+}
+#else
+int main() {
+	freopen("input.txt", "r", stdin);
+	freopen("output.txt", "w", stdout);
+
+	int num;
+	scanf("%d", &num);
+
+	hash_table* HT = init_HT(num*10);
+
+
+	int* arr = malloc(num * sizeof(int));
+	int size = 0;
+	for (int i = 0; i < num; i++) {
+		int x;
+		scanf("%d", &x);
+		if (contains_key(HT, x)==0) {
+			append_pair(HT, (Pair) { x, 322 });
+			arr[size] = x;
+			size++;
+		}
+
+	}
+	printf("%d %d\n ", size,num);
+	for (int i = 0; i < size; i++) {
+		printf("%d ", arr[i]);
+	}
+
+
+
+	return 0;
+}
+#endif
+
+*/
+
+
+// Searching algorythms
+//
+void* BinSearch(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
+	size_t i = 0, j = size_arr - 1;
+	size_t middle;
+	void* answer = 0;
+	while (i <= j) {
+		middle = (i + j) / 2;
+		if (comp(elem, (char*)arr + middle * size_elem) < 0) {
+			j = middle - 1;
+		}
+		else if (comp(elem, (char*)arr + middle * size_elem) > 0) {
+			i = middle + 1;
+		}
+		else {
+			answer = (char*)arr + middle * size_elem;
+			break;
+		}
+		// To get the index of the element (pointed to by the result of the function),
+		// you can use the "formula" (mid-arr)/size_elem.
+		// For custom data types is enough mid-arr,
+		// (otherwise, the number of bytes in the interval is returned mid-arr, 
+		// because of what you need to divide by type)      (by char(...))
+	}
+
+	return comp(answer, elem) == 0 ? answer : NULL;
+}
+
+void* BinSearchUp(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
+	size_t i = 0, j = size_arr - 1;
+	size_t middle;
+	void* answer = 0;
+	while (i < j) {
+		middle = (i + j) / 2;
+		if (comp(elem, (char*)arr + middle * size_elem) >= 0) {
+			i = middle + 1;
+		}
+		else {
+			j = middle;
+		}
+
+	}
+	if (comp((char*)arr + (i - 1) * size_elem, (char*)arr + i * size_elem) < 0) {
+		i -= 1;
+	}
+	if (i < 0) return NULL;
+	answer = (char*)arr + i * size_elem;
+	return comp(answer, elem) == 0 ? answer : NULL;
+}
+
+void* BinSearchDown(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
+	size_t i = 0, j = size_arr - 1;
+	size_t middle;
+	void* answer = 0;
+	while (i < j) {
+		middle = (i + j) / 2;
+		if (comp(elem, (char*)arr + middle * size_elem) <= 0) {
+			j = middle;
+		}
+		else {
+			i = middle + 1;
+		}
+	}
+
+	answer = (char*)arr + i * size_elem;
+	return comp(answer, elem) == 0 ? answer : NULL;
+}
+
+void* LowerBound(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
+	size_t i = 0, j = size_arr - 1;
+	size_t middle;
+	void* answer = 0;
+	while (i < j) {
+		middle = (i + j) / 2;
+		if (comp(elem, (char*)arr + middle * size_elem) <= 0) {
+			j = middle;
+		}
+		else {
+			i = middle + 1;
+		}
+	}
+
+	answer = (char*)arr + i * size_elem;
+	return answer;
+}
+
+int KStatistics(int* arr, int number, int point) {
+	int left_arr = 0, right_arr = number - 1;
+	while (1) {
+		int mid = Partition(arr, left_arr, right_arr);
+		if (left_arr == right_arr) {
+			return arr[mid];
+		}
+		else if (point <= mid) {
+			right_arr = mid;
+		}
+		else {
+			left_arr = mid + 1;
+		}
+	}
 }
 //
 
@@ -519,26 +1021,6 @@ void MergeSort(int* arr, int len) {
 	free(res);
 }
 
-void PairsCountingSort(pairs* arr, int len, int range) {
-
-	int* new_len = calloc(range + 2, sizeof(int));
-	for (int i = 0; i < len; i++) {
-		new_len[arr[i].key + 1]++;
-	}
-	for (int i = 1; i <= range; i++) {
-		new_len[i] += new_len[i - 1];
-	}
-	pairs* new_arr = malloc(len * sizeof(pairs));
-	for (int i = 0; i < len; i++) {
-		new_arr[new_len[arr[i].key]] = arr[i];
-		new_len[arr[i].key]++;
-	}
-
-	memmove(arr, new_arr, len * sizeof(pairs));
-	free(new_arr);
-	free(new_len);
-}
-
 void RadixSort(char** arr, size_t arr_size, size_t length) {
 
 	int start = 'a';
@@ -577,7 +1059,7 @@ void FlipFlopRadixSort(char** arr, size_t arr_size, size_t length) {
 
 	char** res = malloc(arr_size * sizeof(char*));
 	int* count = calloc((end - start + 1), sizeof(int));
-	
+
 	int coin = 0;
 
 	char** flipflop[2] = { arr,res };
@@ -604,446 +1086,17 @@ void FlipFlopRadixSort(char** arr, size_t arr_size, size_t length) {
 	free(res);
 	free(count);
 }
-//
 
-
-// Searching algorythms
-//
-void* BinSearch(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
-	size_t i = 0, j = size_arr - 1;
-	size_t middle;
-	void* answer = 0;
-	while (i <= j) {
-		middle = (i + j) / 2;
-		if (comp(elem, (char*)arr + middle * size_elem) < 0) {
-			j = middle - 1;
-		}
-		else if (comp(elem, (char*)arr + middle * size_elem) > 0) {
-			i = middle + 1;
-		}
-		else {
-			answer = (char*)arr + middle * size_elem;
-			break;
-		}
-		// To get the index of the element (pointed to by the result of the function),
-		// you can use the "formula" (mid-arr)/size_elem.
-		// For custom data types is enough mid-arr,
-		// (otherwise, the number of bytes in the interval is returned mid-arr, 
-		// because of what you need to divide by type)      (by char(...))
-	}
-
-	return comp(answer, elem) == 0 ? answer : NULL;
-}
-
-void* BinSearchUp(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
-	size_t i = 0, j = size_arr - 1;
-	size_t middle;
-	void* answer = 0;
-	while (i < j) {
-		middle = (i + j) / 2;
-		if (comp(elem, (char*)arr + middle * size_elem) >= 0) {
-			i = middle + 1;
-		}
-		else {
-			j = middle;
-		}
-
-	}
-	if (comp((char*)arr + (i - 1) * size_elem, (char*)arr + i * size_elem) < 0) {
-		i -= 1;
-	}
-	if (i < 0) return NULL;
-	answer = (char*)arr + i * size_elem;
-	return comp(answer, elem) == 0 ? answer : NULL;
-}
-
-void* BinSearchDown(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
-	size_t i = 0, j = size_arr - 1;
-	size_t middle;
-	void* answer = 0;
-	while (i < j) {
-		middle = (i + j) / 2;
-		if (comp(elem, (char*)arr + middle * size_elem) <= 0) {
-			j = middle;
-		}
-		else {
-			i = middle + 1;
-		}
-	}
-
-	answer = (char*)arr + i * size_elem;
-	return comp(answer, elem) == 0 ? answer : NULL;
-}
-
-void* LowerBound(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf comp) {
-	size_t i = 0, j = size_arr - 1;
-	size_t middle;
-	void* answer = 0;
-	while (i < j) {
-		middle = (i + j) / 2;
-		if (comp(elem, (char*)arr + middle * size_elem) <= 0) {
-			j = middle;
-		}
-		else {
-			i = middle + 1;
-		}
-	}
-
-	answer = (char*)arr + i * size_elem;
-	return answer;
-}
-
-int KStatistics(int* arr, int number, int point) {
-	int left_arr = 0, right_arr = number - 1;
-	while (1) {
-		int mid = Partition(arr, left_arr, right_arr);
-		if (left_arr == right_arr) {
-			return arr[mid];
-		}
-		else if (point <= mid) {
-			right_arr = mid;
-		}
-		else {
-			left_arr = mid + 1;
-		}
-	}
+void Heap_Sort(Heap* self, int* res_arr) {
+	int size = self->vector->size;
+	for (size_t i = 0; i < size; i++) res_arr[i] = HeapExtractMin(self);
 }
 //
-
-
-void Eraosphen(int pivot, Node* Ans) {
-
-	int* arr = malloc(pivot * sizeof(int));
-	for (size_t i = 0; i < pivot; i++) {
-		arr[i] = i;
-	}
-	arr[1] = 0;
-	for (size_t i = 2; i < pivot; i++) {
-		if (arr[i] != 0) {
-			for (size_t j = i * 2; j < pivot; j += i) arr[j] = 0;
-		}
-	}
-	for (size_t i = 0; i < pivot; i++) if (arr[i] != 0) NodeAddAfter(PairInit(1, arr[i]), Ans);
-
-}
-
-
-//Hash table + tree
-/*
-typedef struct Pairs {
-	int key;
-	char* value;
-} Pair;
-
-typedef struct Nodes {
-	Pair elem;
-	struct Nodes* next;
-	struct Nodes* prev;
-} Node;
-
-typedef struct hash_tabels {
-	int size;
-	Node** arr;
-}hash_table;
-
-hash_table* init_HT(int size) {
-
-	hash_table* HT = malloc(sizeof(hash_table));
-	HT->size = size;
-	HT->arr = calloc(size, sizeof(Node*));
-
-	return HT;
-}
-
-void append_pair(hash_table* HT, Pair pair) {
-
-	unsigned int num = hash(pair.key);
-	unsigned int idex = num % HT->size;
-
-	if (HT->arr[idex] != 0) {
-		for (Node* temp = HT->arr[idex]->next; temp != HT->arr[idex]; temp = temp->next) {
-			if (pair.key == temp->elem.key) {
-				temp->elem.key = pair.key;
-				return;
-			}
-		}
-		NodeAddAfter(pair, HT->arr[idex]);
-	}
-	else {
-		HT->arr[idex] = NodeHeadCreate();
-		NodeAddAfter(pair, HT->arr[idex]);
-	}
-
-	return;
-}
-
-char** get_value(hash_table* HT, int key) {
-
-	unsigned int new = hash(key);
-	unsigned int index = new % HT->size;
-
-	Node* temp = HT->arr[index];
-	if (temp != 0) {
-		for (Node* t = HT->arr[index]->next; t != HT->arr[index]; t = t->next) {
-			if (key == t->elem.key) {
-				return &t->elem.value;
-			}
-		}
-	}
-
-	return NULL;
-}
-
-char contains_key(hash_table* HT, int key) {
-
-	unsigned int new = hash(key);
-	unsigned int index = new % HT->size;
-
-	Node* temp = HT->arr[index];
-	if (temp != 0) {
-		for (Node* t = HT->arr[index]->next; t != HT->arr[index]; t = t->next) {
-			if (key == t->elem.key) {
-				return 1;
-			}
-		}
-	}
-
-	return 0;
-}
-
-void del_elem(int key, hash_table* HT) {
-
-	unsigned int new = hash(key);
-	unsigned int index = new % HT->size;
-
-	Node* temp = HT->arr[index];
-	if (temp != 0) {
-		for (Node* t = HT->arr[index]->next; t != HT->arr[index]; t = t->next) {
-			if (key == t->elem.key) {
-				NodePop(t);
-				return;
-			}
-		}
-	}
-
-	return;
-}
-
-void del_HT(hash_table* HT) {
-	for (int i = 0; i < HT->size; i++) {
-		if (HT->arr[i] != 0) {
-			for (Node* t = HT->arr[i]->next; t != HT->arr[i]; t = HT->arr[i]->next) {
-				NodePop(t);
-			}
-			NodePop(HT->arr[i]);
-		}
-	}
-	free(HT->arr);
-	free(HT);
-}
-
-typedef struct NNodes {
-
-	int key;
-	void* value;
-	struct NNodes* left;
-	struct NNodes* right;
-
-} NNode;
-
-NNode* NodeInit(int key, void* value) {
-
-	NNode* Node = malloc(sizeof(NNode));
-	Node->key = key;
-	Node->value = value;
-	Node->left = 0;
-	Node->right = 0;
-
-	return Node;
-}
-
-NNode* append_root(int key, void* value, NNode* root) {
-
-	if (root == 0) {
-		root = NodeInit(key, value);
-		return root;
-	}
-
-	if (key < root->key) {
-		root->left = append_root(key, value, root->left);
-	}
-
-	else {
-		root->right = append_root(key, value, root->right);
-	}
-	return root + 0;
-}
-
-NNode* find(NNode* root, int key) {
-
-	if (root == 0) {
-		return 0;
-	}
-	if (key == root->key) {
-		return root;
-	}
-	NNode* N;
-	if (key < root->key) {
-		N = find(key, root->left);
-	}
-	else {
-		N = find(key, root->right);
-	}
-	return N;
-
-}
-
-int count(NNode* root) {
-	if (root == 0) return 0;
-	return count(root->left) + 1 + count(root->right);
-}
-
-void Tree_to_Array(NNode* root, Pair* arr, int* i) {
-
-	if (root == 0) return;
-
-	Tree_to_Array(root->left, arr, i);
-
-	arr[*i].key = root->key;
-	arr[*i].value = root->value;
-	*i = *i + 1;
-
-	Tree_to_Array(root->right, arr, i);
-
-	return;
-}
-
-Pair* ConvertationTA(NNode* root) {
-
-	int i = 0;
-	int size = count(root);
-	Pair* arr = malloc(size * sizeof(Pair));
-
-	Tree_to_Array(root, arr, &i);
-
-	return arr;
-}
-
-*/
-
-//Functions for tree
-/*
-void DeleteTree(NNode* root) {
-
-	if (root == 0) return;
-
-	DeleteTree(root->left);
-	DeleteTree(root->right);
-
-	free(root);
-
-	return;
-
-}
-
-NNode* remove(NNode* root, int key) {
-
-	if (root == 0) {
-		return 0;
-	}
-	if (key == root->key) {
-		return root;
-	}
-	NNode* N;
-	if (key < root->key) {
-		N = remove(root->left,key);
-	}
-	else {
-		N = remove(root->right,key);
-	}
-
-	return N;
-}
-*/
-
-//main
-/*
-#define FST 1
-
-#if FST!=1
-int main() {
-	freopen("input.txt", "r", stdin);
-	freopen("output.txt", "w", stdout);
-	int n;
-	int range;
-	scanf("%d", &n);
-	scanf("%d", &range);
-	pair* arr = malloc(n * sizeof(pair));
-	for (int i = 0; i < n; i++) {
-		int num;
-		arr[i].value =malloc(4*sizeof(char));
-		scanf("%d ", &num);
-		for (int j = 0; j < 3; j++) {
-			scanf("%c", &arr[i].value[j]);
-			}
-		arr[i].value[3] = 0;
-
-		arr[i].key = num;
-	}
-
-
-
-	//for (size_t i = 0; i < n; i++)
-	//{
-	//	free(arr[i].value);
-	//}
-	//free(arr);
-
-
-
-	return 0;
-}
-#else
-int main() {
-	freopen("input.txt", "r", stdin);
-	freopen("output.txt", "w", stdout);
-
-	int num;
-	scanf("%d", &num);
-
-	hash_table* HT = init_HT(num*10);
-
-
-	int* arr = malloc(num * sizeof(int));
-	int size = 0;
-	for (int i = 0; i < num; i++) {
-		int x;
-		scanf("%d", &x);
-		if (contains_key(HT, x)==0) {
-			append_pair(HT, (Pair) { x, 322 });
-			arr[size] = x;
-			size++;
-		}
-
-	}
-	printf("%d %d\n ", size,num);
-	for (int i = 0; i < size; i++) {
-		printf("%d ", arr[i]);
-	}
-
-
-
-	return 0;
-}
-#endif
-
-*/
 
 
 // Comparators
 //
-
-int comparePair(Pair** x, Pair** y) {
+int comparePair(ListPair** x, ListPair** y) {
 
 	if ((*x)->value < (*y)->value) {
 		return -1;
@@ -1122,6 +1175,27 @@ int compareChr(size_t* context,char** x,char** y) {
 
 // Practical
 //
+
+void PairsCountingSort(pairs* arr, int len, int range) {
+
+	int* new_len = calloc(range + 2, sizeof(int));
+	for (int i = 0; i < len; i++) {
+		new_len[arr[i].key + 1]++;
+	}
+	for (int i = 1; i <= range; i++) {
+		new_len[i] += new_len[i - 1];
+	}
+	pairs* new_arr = malloc(len * sizeof(pairs));
+	for (int i = 0; i < len; i++) {
+		new_arr[new_len[arr[i].key]] = arr[i];
+		new_len[arr[i].key]++;
+	}
+
+	memmove(arr, new_arr, len * sizeof(pairs));
+	free(new_arr);
+	free(new_len);
+}
+
 typedef enum operands {
 	not_operand, plus, minus, mult
 }operand;
@@ -1181,8 +1255,8 @@ void solver_3(Node* stack,char* string) {
 		NodeAddBefore(PairInit(1, atoi(string)), stack);
 	}
 	else {
-		Pair element2 = NodePop(stack->prev);
-		Pair element1 = NodePop(stack->prev);
+		ListPair element2 = NodePop(stack->prev);
+		ListPair element1 = NodePop(stack->prev);
 		NodeAddBefore(PairInit(1, do_math(element1.value, element2.value, op)), stack);
 	}
 }
@@ -1230,6 +1304,22 @@ long long maximal_among_minimal(int* arr,int arr_size,int count_jord) {
 	return answer;
 
 }
+
+void Eraosphen(int pivot, Node* Ans) {
+
+	int* arr = malloc(pivot * sizeof(int));
+	for (size_t i = 0; i < pivot; i++) {
+		arr[i] = i;
+	}
+	arr[1] = 0;
+	for (size_t i = 2; i < pivot; i++) {
+		if (arr[i] != 0) {
+			for (size_t j = i * 2; j < pivot; j += i) arr[j] = 0;
+		}
+	}
+	for (size_t i = 0; i < pivot; i++) if (arr[i] != 0) NodeAddAfter(PairInit(1, arr[i]), Ans);
+
+}
 //
 
 //  MAIN
@@ -1244,7 +1334,7 @@ int main() {
 		printf("%d ", res);
 	}*/
 	
-
+	
 
 	return 0;
 }
