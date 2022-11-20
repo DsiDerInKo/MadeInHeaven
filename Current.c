@@ -592,20 +592,20 @@ TreeNode* TreeNodeInit(int key, TreeValueType value) {
 	return TNode;
 }
 
-TreeNode* _TreeAddNode(TreeNode* root,TreeValueType value, int key) {
+TreeNode* _TreeAddNode(TreeNode* Root,TreeValueType value, int key) {
 
-	if (root == 0) {
+	if (Root == 0) {
 		TreeNode* NewNode = TreeNodeInit(key, value);
 		return NewNode;
 	}
-	if (compareTreeNode(&key,&root) < 0 ) {
-		root->left = _TreeAddNode(root->left,value,key);
+	if (key < Root->key) {
+		Root->left = _TreeAddNode(Root->left,value,key);
 	}
-	if (compareTreeNode(&key,&root) > 0) {
-		root->right = _TreeAddNode(root->right,value,key);
+	if (key > Root->key) {
+		Root->right = _TreeAddNode(Root->right,value,key);
 	}
 
-	return root;
+	return Root;
 }
 
 void TreeAdd(Tree* self, TreeValueType value, int key) {
@@ -614,14 +614,14 @@ void TreeAdd(Tree* self, TreeValueType value, int key) {
 
 }
 
-TreeNode* TreeFindNode(TreeNode* root,int key) {
+TreeNode* TreeFindNode(TreeNode* Root,int key) {
 
-	if (root == NULL) return 0;
-	if (compareTreeNode(&key, &root) == 0) return root;
+	if (Root == NULL) return 0;
+	if (key == Root->key) return Root;
 	TreeNode* found;
 
-	if (compareTreeNode(&key, &root) < 0) found = TreeFindNode(root->left, key);
-	else found = TreeFindNode(root->right, key);
+	if (key < Root->key) found = TreeFindNode(Root->left, key);
+	else found = TreeFindNode(Root->right, key);
 
 	return found;
 }
@@ -630,7 +630,7 @@ TreeNode* _TreeNodeRemove(TreeNode* root,int key) {
 
 	if (root == 0) return 0;
 
-	if (compareTreeNode(&key, &root->key) == 0) {
+	if (root->key == key) {
 
 		TreeNode* temp = root;
 
@@ -656,7 +656,7 @@ TreeNode* _TreeNodeRemove(TreeNode* root,int key) {
 			}
 
 			TreeValueType val = temp->value;
-			int k = temp->key;
+			unsigned int k = temp->key;
 			temp->value = end->value;
 			temp->key = end->key;
 			end->key = k;
@@ -670,10 +670,10 @@ TreeNode* _TreeNodeRemove(TreeNode* root,int key) {
 
 	}
 
-	if (compareTreeNode(&key, &root->key) < 0) {
+	if (key < root->key) {
 		root->left = _TreeNodeRemove(root->left,key);
 	}
-	if (compareTreeNode(&key, &root->key) > 0) {
+	if (key > root->key) {
 		root->right = _TreeNodeRemove(root->right, key);
 	}
 
@@ -781,8 +781,6 @@ TreeArrayPair* TreePostTraveraslToArray(Tree* self) {
 	return arr;
 }
 
-
-
 void TreeDelete(TreeNode* self) {
 
 	if (self == NULL) return;
@@ -792,18 +790,7 @@ void TreeDelete(TreeNode* self) {
 	free(self);
 
 }
-
-void swapTreeNodeValues(TreeNode** x, TreeNode** y) {
-
-	TreeNode* tmp = (*x);
-	(*x)->key = (*y)->key;
-	(*x)->value = (*y)->value;
-	(*y)->key = tmp->key;
-	(*y)->value = tmp->value;
-
-}
 //
-
 
 
 
@@ -1292,19 +1279,6 @@ int compareChr(size_t* context,char** x,char** y) {
 	}
 
 }
-
-int compareTreeNode(void* y, void* x) {
-
-	if ((int)y < ((TreeNode*)x)->key ) {
-		return -1;
-	}
-	if ((int)y > ((TreeNode*)x)->key) {
-		return 1;
-	}
-	if (((TreeNode*)x)->key == (int)y) {
-		return 0;
-	}
-}
 //
 
 
@@ -1522,12 +1496,7 @@ int main() {
 
 	Tree* self = TreeInit();
 
-	TreeAdd(self,NULL,1);
-	TreeAdd(self,NULL,0);
-	TreeAdd(self,NULL,100);
-	TreeAdd(self,NULL,2);
 
-	1 + 1;
 	return 0;
 }
 
