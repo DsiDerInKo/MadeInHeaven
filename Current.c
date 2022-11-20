@@ -36,6 +36,8 @@ Use!
 */
 
 
+
+
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,12 +47,36 @@ Use!
 #include <assert.h>
 #include <limits.h>
 #include <stdbool.h>
-#include <Windows.h>
+
 #define max(a,b) (((a) > (b)) ? (a):(b))
 #define min(a,b) (((a) < (b)) ? (a):(b))
 #define BufSize 50
 
 typedef int (*cmpf) (void*, void*);
+
+#define CONCAT2X(a, b) a##_##b
+#define CONCAT2(a, b) CONCAT2X(a, b)
+#define NAME(name) CONCAT2(Vector, name)
+#define createVectorType(VECTOR_TYPE) \
+typedef struct NAME{ \
+VECTOR_TYPE *arr; size_t size; size_t cap; \
+} NAME; \
+void CONCAT2(NAME, init(NAME* vec)) { \
+vec->cap = 1; \
+vec->arr = calloc(vec->cap, sizeof(VECTOR_TYPE)); \
+vec->size = 0; \
+} \
+int CONCAT2(NAME, push(NAME* vec, VECTOR_TYPE value)) { \
+if (vec->cap == vec->size) { \
+if (vec->cap == 0) { \
+CONCAT2(NAME, init(vec)); \
+} \
+vec->cap *= 2; \
+vec->arr = realloc(vec->arr, vec->size * sizeof(VECTOR_TYPE)); \
+} \
+vec->arr[vec->size++] = value; \
+return vec->size - 1; \
+}
 
 
 
@@ -529,11 +555,11 @@ void del_HT(hash_table* HT) {
 
 // Tree
 //
-#define TreeValueType int
+#define TreeValueType char*
 
 typedef struct TreeNodes{
 
-	unsigned int key;
+	int key;
 	TreeValueType value;
 	struct TreeNodes* left;
 	struct TreeNodes* right;
@@ -555,7 +581,7 @@ Tree* TreeInit() {
 	return self;
 }
 
-TreeNode* TreeNodeInit(unsigned int key, TreeValueType value) {
+TreeNode* TreeNodeInit(int key, TreeValueType value) {
 
 	TreeNode* TNode = malloc(sizeof(TreeNode));
 	TNode->value = value;
@@ -566,45 +592,45 @@ TreeNode* TreeNodeInit(unsigned int key, TreeValueType value) {
 	return TNode;
 }
 
-TreeNode* _TreeAddNode(TreeNode* Root,TreeValueType value, unsigned int key) {
+TreeNode* _TreeAddNode(TreeNode* root,TreeValueType value, int key) {
 
-	if (Root == 0) {
+	if (root == 0) {
 		TreeNode* NewNode = TreeNodeInit(key, value);
 		return NewNode;
 	}
-	if (key < Root->key) {
-		Root->left = _TreeAddNode(Root->left,value,key);
+	if (compareTreeNode(&key,&root) < 0 ) {
+		root->left = _TreeAddNode(root->left,value,key);
 	}
-	if (key > Root->key) {
-		Root->right = _TreeAddNode(Root->right,value,key);
+	if (compareTreeNode(&key,&root) > 0) {
+		root->right = _TreeAddNode(root->right,value,key);
 	}
 
-	return Root;
+	return root;
 }
 
-void TreeAdd(Tree* self, TreeValueType value, unsigned int key) {
+void TreeAdd(Tree* self, TreeValueType value, int key) {
 
 	self->root = _TreeAddNode(self->root, value, key);
 
 }
 
-TreeNode* TreeFindNode(TreeNode* Root,unsigned int key) {
+TreeNode* TreeFindNode(TreeNode* root,int key) {
 
-	if (Root == NULL) return 0;
-	if (key == Root->key) return Root;
+	if (root == NULL) return 0;
+	if (compareTreeNode(&key, &root) == 0) return root;
 	TreeNode* found;
 
-	if (key < Root->key) found = TreeFindNode(Root->left, key);
-	else found = TreeFindNode(Root->right, key);
+	if (compareTreeNode(&key, &root) < 0) found = TreeFindNode(root->left, key);
+	else found = TreeFindNode(root->right, key);
 
 	return found;
 }
 
-TreeNode* _TreeNodeRemove(TreeNode* root,unsigned int key) {
+TreeNode* _TreeNodeRemove(TreeNode* root,int key) {
 
 	if (root == 0) return 0;
 
-	if (root->key == key) {
+	if (compareTreeNode(&key, &root->key) == 0) {
 
 		TreeNode* temp = root;
 
@@ -630,7 +656,7 @@ TreeNode* _TreeNodeRemove(TreeNode* root,unsigned int key) {
 			}
 
 			TreeValueType val = temp->value;
-			unsigned int k = temp->key;
+			int k = temp->key;
 			temp->value = end->value;
 			temp->key = end->key;
 			end->key = k;
@@ -644,33 +670,69 @@ TreeNode* _TreeNodeRemove(TreeNode* root,unsigned int key) {
 
 	}
 
-	if (key < root->key) {
+	if (compareTreeNode(&key, &root->key) < 0) {
 		root->left = _TreeNodeRemove(root->left,key);
 	}
-	if (key > root->key) {
+	if (compareTreeNode(&key, &root->key) > 0) {
 		root->right = _TreeNodeRemove(root->right, key);
 	}
 
 	return root;
 }
 
-void TreeNodeRemove(Tree* self,unsigned int key) {
+void TreeNodeRemove(Tree* self,int key) {
 
 	self->root = _TreeNodeRemove(self->root, key);
 
 }
 
-int TreeCount(Tree*self) {
+int TreeCount(TreeNode *self) {
 
-	if (self->root == 0) return 0;
+	if (self == NULL) return 0;
 
-	return TreeCount(self->root->left) + TreeCount(self->root->right) + 1;
+	return TreeCount(self->left) + TreeCount(self->right) + 1;
+}
+
+TreeNode* TreeGetNext(Tree* self,int key) {
+
+	TreeNode* cur = self->root;
+	TreeNode* reminder = NULL;
+
+	while (cur != NULL) {
+		if (cur->key > key) {
+			reminder = cur;
+			cur = cur->left;
+		}
+		else {
+			cur = cur->right;
+		}
+	}
+
+	return reminder;
+}
+
+TreeNode* TreeGetPrev(Tree* self, int key) {
+
+	TreeNode* cur = self->root;
+	TreeNode* reminder = NULL;
+
+	while (cur != NULL) {
+		if (cur->key >= key) {
+			cur = cur->left;
+		}
+		else {
+			reminder = cur;
+			cur = cur->right;
+		}
+	}
+
+	return reminder;
 }
 
 typedef struct TreeArrayPairs {
 
 	TreeValueType value;
-	unsigned int key;
+	int key;
 
 }TreeArrayPair;
 
@@ -682,7 +744,7 @@ void _TreeConvToArray(TreeNode* root, TreeArrayPair* arr, int* i) {
 
 	arr[*i].key = root->key;
 	arr[*i].value = root->value;
-	*i++;
+	(* i)++;
 
 	_TreeConvToArray(root->right, arr, i);
 
@@ -698,91 +760,52 @@ TreeArrayPair* TreeToArray(Tree* self) {
 	return arr;
 }
 
-void TreeDelete(Tree* self) {
+void _TreePostTraverasl(TreeNode* root, TreeArrayPair* arr, int* i) {
 
-	if (self->root == 0) return;
+	if (root == 0) return;
 
-	TreeDelete(self->root->left);
-	TreeDelete(self->root->right);
-	free(self->root);
+	_TreePostTraverasl(root->left, arr, i);
+	_TreePostTraverasl(root->right, arr, i);
+	arr[*i].key = root->key;
+	arr[*i].value = root->value;
+	(*i)++;
+}
+
+TreeArrayPair* TreePostTraveraslToArray(Tree* self) {
+
+	int i = 0;
+	int size = TreeCount(self->root);
+	TreeArrayPair* arr = malloc(size * sizeof(TreeArrayPair));
+	_TreePostTraverasl(self->root, arr, &i);
+
+	return arr;
+}
+
+
+
+void TreeDelete(TreeNode* self) {
+
+	if (self == NULL) return;
+
+	TreeDelete(self->left);
+	TreeDelete(self->right);
+	free(self);
+
+}
+
+void swapTreeNodeValues(TreeNode** x, TreeNode** y) {
+
+	TreeNode* tmp = (*x);
+	(*x)->key = (*y)->key;
+	(*x)->value = (*y)->value;
+	(*y)->key = tmp->key;
+	(*y)->value = tmp->value;
 
 }
 //
 
 
 
-//main
-/*
-#define FST 1
-
-#if FST!=1
-int main() {
-	freopen("input.txt", "r", stdin);
-	freopen("output.txt", "w", stdout);
-	int n;
-	int range;
-	scanf("%d", &n);
-	scanf("%d", &range);
-	pair* arr = malloc(n * sizeof(pair));
-	for (int i = 0; i < n; i++) {
-		int num;
-		arr[i].value =malloc(4*sizeof(char));
-		scanf("%d ", &num);
-		for (int j = 0; j < 3; j++) {
-			scanf("%c", &arr[i].value[j]);
-			}
-		arr[i].value[3] = 0;
-
-		arr[i].key = num;
-	}
-
-
-
-	//for (size_t i = 0; i < n; i++)
-	//{
-	//	free(arr[i].value);
-	//}
-	//free(arr);
-
-
-
-	return 0;
-}
-#else
-int main() {
-	freopen("input.txt", "r", stdin);
-	freopen("output.txt", "w", stdout);
-
-	int num;
-	scanf("%d", &num);
-
-	hash_table* HT = init_HT(num*10);
-
-
-	int* arr = malloc(num * sizeof(int));
-	int size = 0;
-	for (int i = 0; i < num; i++) {
-		int x;
-		scanf("%d", &x);
-		if (contains_key(HT, x)==0) {
-			append_pair(HT, (Pair) { x, 322 });
-			arr[size] = x;
-			size++;
-		}
-
-	}
-	printf("%d %d\n ", size,num);
-	for (int i = 0; i < size; i++) {
-		printf("%d ", arr[i]);
-	}
-
-
-
-	return 0;
-}
-#endif
-
-*/
 
 
 
@@ -1269,6 +1292,19 @@ int compareChr(size_t* context,char** x,char** y) {
 	}
 
 }
+
+int compareTreeNode(void* y, void* x) {
+
+	if ((int)y < ((TreeNode*)x)->key ) {
+		return -1;
+	}
+	if ((int)y > ((TreeNode*)x)->key) {
+		return 1;
+	}
+	if (((TreeNode*)x)->key == (int)y) {
+		return 0;
+	}
+}
 //
 
 
@@ -1296,78 +1332,7 @@ void PairsCountingSort(pairs* arr, int len, int range) {
 
 }
 
-typedef enum operands {
 
-	not_operand, plus, minus, mult
-
-}operand;
-
-int do_math(int num1,int num2,operand oper) {
-
-	switch (oper)
-	{
-	case plus:
-		return num1 + num2;
-	case minus:
-		return num1 - num2;
-	case mult:
-		return num1 * num2;
-	default:
-		assert(1);
-	}
-
-}
-
-operand is_operand(char* string) {
-
-	switch (string[0])
-	{
-	case '-':
-		return minus;
-	case '+':
-		return plus;
-	case '*':
-		return mult;
-	default:
-		return not_operand;
-	}
-
-}
-
-void solver_4(Node* stack,char* string) {
-
-	int num,temp;
-	operand op = is_operand(string);
-
-	if (op == not_operand) {
-		printf("%d\n", stack->prev->elem.value);
-	}
-	else if(op == plus) {
-		scanf("%d", &num);
-		temp = stack->prev->elem.value;
-		num = max(num, temp);
-		NodeAddBefore(PairInit(1, num), stack);
-	}
-	else if (op == minus) {
-		NodePop(stack->prev);
-	}
-
-}
-
-void solver_3(Node* stack,char* string) {
-	
-	operand op = is_operand(string);
-
-	if (op == not_operand) {
-		NodeAddBefore(PairInit(1, atoi(string)), stack);
-	}
-	else {
-		ListPair element2 = NodePop(stack->prev);
-		ListPair element1 = NodePop(stack->prev);
-		NodeAddBefore(PairInit(1, do_math(element1.value, element2.value, op)), stack);
-	}
-
-}
 
 int check_for_avaliable(int* arr,int arr_size, long long pivot,int count_jord) {
 
@@ -1463,28 +1428,106 @@ void removeExtraSpace(char* source, char* dest) {
 }
 //
 
+typedef struct treePairs {
+	int key;
+	int left;
+	int right;
+}treePair;
 
+int getHight(treePair* arr,int index) {
+	
+	if (index == 0) return 0;
 
-//  MAIN
+	return 1+max(getHight(arr,arr[index].left), getHight(arr,arr[index].right));
+}
+
+int checker(treePair* arr,int index,int minim,int maxim) {
+	if (index == 0) return 1;
+	if (arr[index].key <= minim || arr[index].key >= maxim) return 0;
+	
+	return checker(arr, arr[index].left, minim, arr[index].key) && checker(arr, arr[index].right, arr[index].key, maxim);
+}
+
+void fillip(treePair* arr,int index,int* res, int* i) {
+
+	if (index == 0) return;
+
+	fillip(arr,arr[index].left, res, i);
+
+	//res[*i] = arr[index].key;
+	res[arr[index].key] = ++(* i);
+
+	fillip(arr, arr[index].right, res, i);
+
+}
+
+//GET CLOWNED
+#define biba (
+#define boba )
+#define or ||
+#define and &&
+#define input(x) scanf("%d",& x) 
+#define MAIN int main()
+#define start {
+#define end }
+#define coma ,
+#define dotcoma ;
+#define dot .
+#define plus +
+#define minus -
+#define mult *
+#define is ==
+#define lt <
+#define gt >
+#define le <=
+#define ge >=
+#define inc ++
+#define adress &
+#define set =
+#define strcat(x, y) x##y
+#define comment strcat(/,/)
+#define one 1
+#define zero 0
+
+/*
+comment  MAIN
+MAIN 
+start
+
+	int number dotcoma
+	input(number) dotcoma
+
+	treePair* arr set malloc biba biba number plus one boba mult sizeof biba treePair boba boba dotcoma
+	for biba size_t i set one dotcoma i lt number plus one dotcoma i inc boba start
+		int num1 coma num2 coma num3 dotcoma
+		scanf biba "%d %d %d" coma adress num1 coma adress num2 coma adress num3 boba dotcoma
+		arr[i].key set num1 dotcoma
+		arr[i].left set num2 dotcoma
+		arr[i].right set num3 dotcoma
+	end
+	
+	if biba checker biba arr coma one coma INT_MIN coma INT_MAX boba boba printf biba "YES" boba dotcoma
+	else printf biba "NO" boba dotcoma
+	return zero dotcoma
+
+end
+*/
+
 int main() {
-	//freopen("input.txt", "r", stdin);
-	/*
-	Node* Head = NodeHeadCreate();
-	Eraosphen(10000000, Head);
-	while (Head->next != Head) {
-		Pair temp = NodePop(Head->prev);
-		int res = temp.value;
-		printf("%d ", res);
-	}*/
-	
-	char* exstr = malloc(10 * sizeof(char));
-	char* str = "  1 ( ) . ";
-	
-	
-	removeExtraSpace(str,exstr);
-	printf("[%s]", exstr);
 
-	
+	freopen("input.txt", "r", stdin);
+
+	char buf[BufSize];
+	char str[BufSize];
+
+	Tree* self = TreeInit();
+
+	TreeAdd(self,NULL,1);
+	TreeAdd(self,NULL,0);
+	TreeAdd(self,NULL,100);
+	TreeAdd(self,NULL,2);
+
+	1 + 1;
 	return 0;
 }
 
@@ -1775,6 +1818,82 @@ int main() {
 }
 */
 
+//Polish notation and MaxStack
+/*
+typedef enum operands {
+
+	not_operand, plus, minus, mult
+
+}operand;
+
+int do_math(int num1,int num2,operand oper) {
+
+	switch (oper)
+	{
+	case plus:
+		return num1 + num2;
+	case minus:
+		return num1 - num2;
+	case mult:
+		return num1 * num2;
+	default:
+		assert(1);
+	}
+
+}
+
+operand is_operand(char* string) {
+
+	switch (string[0])
+	{
+	case '-':
+		return minus;
+	case '+':
+		return plus;
+	case '*':
+		return mult;
+	default:
+		return not_operand;
+	}
+
+}
+
+void MaxStack(Node* stack,char* string) {
+
+	int num,temp;
+	operand op = is_operand(string);
+
+	if (op == not_operand) {
+		printf("%d\n", stack->prev->elem.value);
+	}
+	else if(op == plus) {
+		scanf("%d", &num);
+		temp = stack->prev->elem.value;
+		num = max(num, temp);
+		NodeAddBefore(PairInit(1, num), stack);
+	}
+	else if (op == minus) {
+		NodePop(stack->prev);
+	}
+
+}
+
+void PolishNotation(Node* stack,char* string) {
+
+	operand op = is_operand(string);
+
+	if (op == not_operand) {
+		NodeAddBefore(PairInit(1, atoi(string)), stack);
+	}
+	else {
+		ListPair element2 = NodePop(stack->prev);
+		ListPair element1 = NodePop(stack->prev);
+		NodeAddBefore(PairInit(1, do_math(element1.value, element2.value, op)), stack);
+	}
+
+}
+*/
+
 //Test
 /*
 	freopen("input.txt", "r", stdin);
@@ -1801,4 +1920,78 @@ int main() {
 
 	}
 */
+
+//main
+/*
+#define FST 1
+
+#if FST!=1
+int main() {
+	freopen("input.txt", "r", stdin);
+	freopen("output.txt", "w", stdout);
+	int n;
+	int range;
+	scanf("%d", &n);
+	scanf("%d", &range);
+	pair* arr = malloc(n * sizeof(pair));
+	for (int i = 0; i < n; i++) {
+		int num;
+		arr[i].value =malloc(4*sizeof(char));
+		scanf("%d ", &num);
+		for (int j = 0; j < 3; j++) {
+			scanf("%c", &arr[i].value[j]);
+			}
+		arr[i].value[3] = 0;
+
+		arr[i].key = num;
+	}
+
+
+
+	//for (size_t i = 0; i < n; i++)
+	//{
+	//	free(arr[i].value);
+	//}
+	//free(arr);
+
+
+
+	return 0;
+}
+#else
+int main() {
+	freopen("input.txt", "r", stdin);
+	freopen("output.txt", "w", stdout);
+
+	int num;
+	scanf("%d", &num);
+
+	hash_table* HT = init_HT(num*10);
+
+
+	int* arr = malloc(num * sizeof(int));
+	int size = 0;
+	for (int i = 0; i < num; i++) {
+		int x;
+		scanf("%d", &x);
+		if (contains_key(HT, x)==0) {
+			append_pair(HT, (Pair) { x, 322 });
+			arr[size] = x;
+			size++;
+		}
+
+	}
+	printf("%d %d\n ", size,num);
+	for (int i = 0; i < size; i++) {
+		printf("%d ", arr[i]);
+	}
+
+
+
+	return 0;
+}
+#endif
+
+*/
+
 
