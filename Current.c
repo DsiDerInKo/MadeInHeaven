@@ -47,6 +47,7 @@ Use!
 #include <assert.h>
 #include <limits.h>
 #include <stdbool.h>
+#include <Windows.h>
 
 #define max(a,b) (((a) > (b)) ? (a):(b))
 #define min(a,b) (((a) < (b)) ? (a):(b))
@@ -54,29 +55,6 @@ Use!
 
 typedef int (*cmpf) (void*, void*);
 
-#define CONCAT2X(a, b) a##_##b
-#define CONCAT2(a, b) CONCAT2X(a, b)
-#define NAME(name) CONCAT2(Vector, name)
-#define createVectorType(VECTOR_TYPE) \
-typedef struct NAME{ \
-VECTOR_TYPE *arr; size_t size; size_t cap; \
-} NAME; \
-void CONCAT2(NAME, init(NAME* vec)) { \
-vec->cap = 1; \
-vec->arr = calloc(vec->cap, sizeof(VECTOR_TYPE)); \
-vec->size = 0; \
-} \
-int CONCAT2(NAME, push(NAME* vec, VECTOR_TYPE value)) { \
-if (vec->cap == vec->size) { \
-if (vec->cap == 0) { \
-CONCAT2(NAME, init(vec)); \
-} \
-vec->cap *= 2; \
-vec->arr = realloc(vec->arr, vec->size * sizeof(VECTOR_TYPE)); \
-} \
-vec->arr[vec->size++] = value; \
-return vec->size - 1; \
-}
 
 
 
@@ -129,10 +107,38 @@ void UnSwap(void* a, void* b,size_t size_elem) {
 
 // Vector (dinamic array)
 //
+
+//Vector on defines
+#define CONCAT2X(a, b) a##_##b
+#define CONCAT2(a, b) CONCAT2X(a, b)
+#define NAME(name) CONCAT2(vector, name)
+#define createVectorType(VECTOR_TYPE) \
+typedef struct NAME{ \
+VECTOR_TYPE *arr; size_t size; size_t cap; \
+} NAME; \
+void CONCAT2(NAME, init(NAME* vec)) { \
+vec->cap = 1; \
+vec->arr = calloc(vec->cap, sizeof(VECTOR_TYPE)); \
+vec->size = 0; \
+} \
+int CONCAT2(NAME, push(NAME* vec, VECTOR_TYPE value)) { \
+if (vec->cap == vec->size) { \
+if (vec->cap == 0) { \
+CONCAT2(NAME, init(vec)); \
+} \
+vec->cap *= 2; \
+vec->arr = realloc(vec->arr, vec->size * sizeof(VECTOR_TYPE)); \
+} \
+vec->arr[vec->size++] = value; \
+return vec->size - 1; \
+}
+//
+
+
 #define VectorType int
 
 typedef struct Vectors {
-
+	
 	size_t size;
 	size_t capacity;
 	VectorType* data;
@@ -140,7 +146,7 @@ typedef struct Vectors {
 } Vector;
 
 Vector* VectorInit() {
-
+	
 	Vector* vector = malloc(sizeof(Vector));
 	vector->capacity = 2;
 	vector->size = 0;
@@ -191,7 +197,7 @@ unsigned int hash(int x) {
 
 	unsigned long long new = x;
 	new *= 1000000007;
-	new = new >> 30;
+	new = new >> 20;   //might be 30
 
 	return (unsigned int)new;
 }
@@ -555,7 +561,7 @@ void del_HT(hash_table* HT) {
 
 // Tree
 //
-#define TreeValueType char*
+#define TreeValueType int
 
 typedef struct TreeNodes{
 
@@ -563,7 +569,7 @@ typedef struct TreeNodes{
 	TreeValueType value;
 	struct TreeNodes* left;
 	struct TreeNodes* right;
-
+	int hight;
 	
 }TreeNode;
 
@@ -572,6 +578,101 @@ typedef struct _Trees {
 	TreeNode* root;
 
 }Tree;
+
+int getHight(TreeNode* self) {
+
+	if (self == NULL) return -1;
+
+	return self->hight;
+}
+
+void updateBalance(TreeNode* self) {
+
+	if (self == NULL) return;
+	self->hight = 1 + max(getHight(self->left), getHight(self->right));
+
+}
+
+TreeNode* smallLeftRotate(TreeNode* root) {
+
+	TreeNode* temp = root->right;
+	root->right = temp->left;
+	temp->left = root;
+
+	updateBalance(root);
+	updateBalance(temp);
+
+	return temp;
+}
+
+TreeNode* smallRightRotate(TreeNode* root) {
+
+	TreeNode* temp = root->left;
+	root->left = temp->right;
+	temp->right = root;
+
+	updateBalance(root);
+	updateBalance(temp);
+
+	return temp;
+}
+
+TreeNode* bigLeftRotate(TreeNode* root) {
+
+	root->right = smallRightRotate(root->right);
+	return smallLeftRotate(root);
+
+}
+
+TreeNode* bigRightRotate(TreeNode* root) {
+
+	root->left = smallLeftRotate(root->left);
+	return smallRightRotate(root);
+
+}
+
+TreeNode* balanceTree(TreeNode* root) {
+
+	TreeNode* temp = root;
+
+	if (root->hight == 0) return root;
+
+	int rightHight, leftHight, balance;
+	rightHight = getHight(root->right);
+	leftHight = getHight(root->left);
+	balance = rightHight - leftHight;
+
+	if (balance == 2) { // right under-tree is heavier
+
+		if (rightHight - getHight(root->right->right) == 1) { // right-right under-tree is heaviev
+			
+			temp = smallLeftRotate(root);
+
+		}
+		else {
+
+			temp = bigLeftRotate(root);
+
+		}
+
+	}
+	if (balance == -2) { 
+
+		if (leftHight - getHight(root->left->left) == 1) { // left-left under-tree is heavier
+
+			temp = smallRightRotate(root);
+
+		}
+		else {
+
+			temp = bigRightRotate(root);
+
+		}
+
+	}
+
+	return temp;
+}
 
 Tree* TreeInit() {
 
@@ -584,6 +685,7 @@ Tree* TreeInit() {
 TreeNode* TreeNodeInit(int key, TreeValueType value) {
 
 	TreeNode* TNode = malloc(sizeof(TreeNode));
+	TNode->hight = 0;
 	TNode->value = value;
 	TNode->key = key;
 	TNode->left = NULL;
@@ -592,20 +694,23 @@ TreeNode* TreeNodeInit(int key, TreeValueType value) {
 	return TNode;
 }
 
-TreeNode* _TreeAddNode(TreeNode* Root,TreeValueType value, int key) {
+TreeNode* _TreeAddNode(TreeNode* root,TreeValueType value, int key) {
 
-	if (Root == 0) {
+	if (root == 0) {
 		TreeNode* NewNode = TreeNodeInit(key, value);
+		//updateBalance(NewNode);
 		return NewNode;
 	}
-	if (key < Root->key) {
-		Root->left = _TreeAddNode(Root->left,value,key);
+	if (key < root->key) {
+		root->left = _TreeAddNode(root->left,value,key);
 	}
-	if (key > Root->key) {
-		Root->right = _TreeAddNode(Root->right,value,key);
+	if (key > root->key) {
+		root->right = _TreeAddNode(root->right,value,key);
 	}
+	updateBalance(root);
+	root = balanceTree(root);
 
-	return Root;
+	return root;
 }
 
 void TreeAdd(Tree* self, TreeValueType value, int key) {
@@ -614,14 +719,14 @@ void TreeAdd(Tree* self, TreeValueType value, int key) {
 
 }
 
-TreeNode* TreeFindNode(TreeNode* Root,int key) {
+TreeNode* TreeFindNode(TreeNode* root,int key) {
 
-	if (Root == NULL) return 0;
-	if (key == Root->key) return Root;
+	if (root == NULL) return 0;
+	if (key == root->key) return root;
 	TreeNode* found;
 
-	if (key < Root->key) found = TreeFindNode(Root->left, key);
-	else found = TreeFindNode(Root->right, key);
+	if (key < root->key) found = TreeFindNode(root->left, key);
+	else found = TreeFindNode(root->right, key);
 
 	return found;
 }
@@ -646,7 +751,7 @@ TreeNode* _TreeNodeRemove(TreeNode* root,int key) {
 		else if (root->left == NULL) {
 			temp = root->right;
 			free(root);
-		
+			
 		}
 		else {
 
@@ -656,15 +761,16 @@ TreeNode* _TreeNodeRemove(TreeNode* root,int key) {
 			}
 
 			TreeValueType val = temp->value;
-			unsigned int k = temp->key;
+			int k = temp->key;
 			temp->value = end->value;
 			temp->key = end->key;
 			end->key = k;
 			end->value = val;
 
 			root->left = _TreeNodeRemove(root->left, key);
-
+			
 		}
+		updateBalance(temp);
 		
 		return temp;
 
@@ -676,6 +782,8 @@ TreeNode* _TreeNodeRemove(TreeNode* root,int key) {
 	if (key > root->key) {
 		root->right = _TreeNodeRemove(root->right, key);
 	}
+	updateBalance(root);
+	root = balanceTree(root);
 
 	return root;
 }
@@ -792,8 +900,96 @@ void TreeDelete(TreeNode* self) {
 }
 //
 
+// Segment tree
+//
+#define segmentTreeValue int
 
+typedef struct SegTreeNodes {
 
+	segmentTreeValue value;
+
+}SegTreeNode;
+
+SegTreeNode* SegTreeInit(int number) {
+	
+	SegTreeNode* temp = calloc(4*number,sizeof(SegTreeNode));
+
+	return temp;
+}
+
+void _configTree(SegTreeNode* tree, int* array,int number,int leftBoard, int rightBoard) {
+
+	if (leftBoard == rightBoard) {
+
+		tree[number].value = array[leftBoard];
+
+	}
+	else {
+
+		int middle = (leftBoard + rightBoard) / 2;
+		_configTree(tree, array, number * 2, leftBoard, middle);
+		_configTree(tree, array, number * 2+1, middle+1, rightBoard);
+		tree[number].value = tree[number * 2].value + tree[number * 2 + 1].value;
+
+	}
+}
+
+void buildSegTree(SegTreeNode* tree, int* array,int number) {
+
+	_configTree(tree,array, 1, 0, number - 1);
+
+}
+
+int _SegTreeGetSum(SegTreeNode* tree, int value, int curLeft, int curRight, int lf, int rt) {
+
+	if (lf <= curLeft && rt >= curRight) return tree[value].value;
+
+	if (curRight < lf || curLeft > rt) return 0;
+
+	int middle = (curLeft + curRight) / 2;
+	return _SegTreeGetSum(tree, value * 2, curLeft, middle, lf,rt) 
+		+ _SegTreeGetSum(tree, value * 2 + 1, middle+1, curRight, lf, rt);
+}
+
+int SegTreeGetSum(SegTreeNode* tree,int number, int lf, int rt) {
+
+	return _SegTreeGetSum(tree, 1, 0, number - 1, lf, rt);
+
+}
+
+void _SegTreeUpdate(SegTreeNode* tree,int* arr, int oldind, int lf, int rt, int index, segmentTreeValue updateValue) {
+
+	/*if (lf == rt) tree[value].value = updateValue;
+	else {
+		int middle = (lf + rt) / 2;
+		if (index <= middle) _SegTreeUpdate(tree, value * 2, lf, middle, 
+			index, updateValue);
+		else _SegTreeUpdate(tree, value * 2, middle + 1, rt, index, updateValue);
+
+		tree[value].value = tree[value * 2].value + tree[value * 2 + 1].value;
+	}*/
+
+	if (index <= lf && rt <= index) {
+		arr[index] = updateValue;
+		tree[oldind].value = updateValue;
+		return;
+	}
+	if (rt < index || index < lf) return;
+
+	int middle = (rt + lf);
+	middle /= 2;
+	_SegTreeUpdate(tree,arr, oldind *2,lf,middle,index,updateValue);
+	_SegTreeUpdate(tree,arr, oldind *2+1,middle+1,rt,index,updateValue);
+	tree[oldind].value = tree[oldind * 2].value + tree[oldind * 2 + 1].value;
+}
+
+void SegTreeUpdate(SegTreeNode* tree,int* arr,int number, int index, segmentTreeValue updateValue) {
+
+	_SegTreeUpdate(tree,arr,1,0,number-1,index,updateValue);
+
+}
+
+//
 
 
 // Searching algorythms
@@ -1408,11 +1604,11 @@ typedef struct treePairs {
 	int right;
 }treePair;
 
-int getHight(treePair* arr,int index) {
+int findHight(treePair* arr,int index) {
 	
 	if (index == 0) return 0;
 
-	return 1+max(getHight(arr,arr[index].left), getHight(arr,arr[index].right));
+	return 1+max(findHight(arr,arr[index].left), findHight(arr,arr[index].right));
 }
 
 int checker(treePair* arr,int index,int minim,int maxim) {
@@ -1488,14 +1684,82 @@ end
 */
 
 int main() {
+	
+	freopen("input.txt", "r", stdin);	
+/*
+	int number,val;
+	scanf("%d", &number);
 
-	freopen("input.txt", "r", stdin);
+	TreeNode* vertices = calloc(number + 1, sizeof(TreeNode));
 
-	char buf[BufSize];
-	char str[BufSize];
+	int* stack = calloc(number + 1, sizeof(int));
+	stack[0] = 0;
+	vertices[stack[stack[stack[stack[stack[stack[0]]]]]]].key = 3E6;
+	int pointer=0;
 
-	Tree* self = TreeInit();
+	for (size_t i = 1; i <= number; i++){
+			
+		scanf("%d", &val);
 
+		vertices[val].key = val;
+
+		if (val < vertices[stack[pointer]].key) {
+
+			vertices[stack[pointer]].left = vertices + val;
+		}
+		else {
+			int popedIndexOfNode;
+			for (1+4; val > vertices[stack[pointer]].key; popedIndexOfNode = stack[pointer--]);
+			
+			vertices[popedIndexOfNode].right = vertices + val;
+		}
+		stack[++pointer] = val;
+	}
+	
+	int i = 0;
+	int size = TreeCount(vertices[0].left)+1;
+	TreeArrayPair* arr = malloc(size * sizeof(TreeArrayPair));
+	_TreePostTraverasl(vertices[0].left, arr, &i);
+
+	for (size_t i = 0; i < number; i++){
+		printf("%d ", arr[i].key);
+	}*/
+	
+	
+	
+	int numberOfCats, numberOfEvents;
+	
+	scanf("%d %d",&numberOfCats,&numberOfEvents);
+	int* arr = calloc(numberOfCats+1, sizeof(int));
+	char* buf = malloc(2 * sizeof(char));
+	int index, value,newval,res;
+	//buildSegTree(tree,arr,numberOfCats);
+	SegTreeNode* tree = SegTreeInit(numberOfCats);
+	for (int i = 0; i < numberOfEvents; i++){
+		
+		scanf("%s", buf);
+		if (buf[0] == '+') {
+			
+			scanf("%d %d", &index, &value);
+			newval = arr[index-1] + value;
+			SegTreeUpdate(tree, arr,numberOfCats ,index-1, newval);
+		}
+		if (buf[0] == '-') {
+			scanf("%d %d", &index, &value);
+			if (arr[index-1] - value <= 0) {
+				SegTreeUpdate(tree, arr, numberOfCats, index-1, 0);
+			}
+			else {
+				newval = arr[index-1]-value;
+				SegTreeUpdate(tree, arr, numberOfCats, index-1, newval);
+			}
+		}
+		if (buf[0] == '?') {
+			scanf("%d %d", &index, &value);
+			res = SegTreeGetSum(tree, numberOfCats, index-1, value-1);
+			printf("%d\n", res);
+		}
+	}
 
 	return 0;
 }
