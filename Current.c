@@ -912,8 +912,9 @@ typedef struct SegTreeNodes {
 
 SegTreeNode* SegTreeInit(int number) {
 	
-	SegTreeNode* temp = malloc(4*number * sizeof(SegTreeNode));
+	SegTreeNode* temp = calloc(4*number,sizeof(SegTreeNode));
 
+	return temp;
 }
 
 void _configTree(SegTreeNode* tree, int* array,int number,int leftBoard, int rightBoard) {
@@ -941,12 +942,13 @@ void buildSegTree(SegTreeNode* tree, int* array,int number) {
 
 int _SegTreeGetSum(SegTreeNode* tree, int value, int curLeft, int curRight, int lf, int rt) {
 
-	if (curRight < curLeft) return 0;
+	if (lf <= curLeft && rt >= curRight) return tree[value].value;
 
-	if (curLeft == lf && curRight == rt) return tree[value].value;
+	if (curRight < lf || curLeft > rt) return 0;
 
 	int middle = (curLeft + curRight) / 2;
-	return SegTreeGetSum(tree, value * 2, curLeft, middle, lf, min(rt, middle)) + SegTreeGetSum(tree, value * 2 + 1, middle + 1, curRight, max(rt, middle), rt);
+	return _SegTreeGetSum(tree, value * 2, curLeft, middle, lf,rt) 
+		+ _SegTreeGetSum(tree, value * 2 + 1, middle+1, curRight, lf, rt);
 }
 
 int SegTreeGetSum(SegTreeNode* tree,int number, int lf, int rt) {
@@ -955,21 +957,35 @@ int SegTreeGetSum(SegTreeNode* tree,int number, int lf, int rt) {
 
 }
 
-void _SegTreeUpdate(SegTreeNode* tree, int value, int lf, int rt, int index, segmentTreeValue updateValue) {
+void _SegTreeUpdate(SegTreeNode* tree,int* arr, int oldind, int lf, int rt, int index, segmentTreeValue updateValue) {
 
-	if (lf == rt) tree[value].value = updateValue;
+	/*if (lf == rt) tree[value].value = updateValue;
 	else {
 		int middle = (lf + rt) / 2;
-		if (index <= middle) _SegTreeUpdate(tree, value * 2, lf, middle, index, updateValue);
+		if (index <= middle) _SegTreeUpdate(tree, value * 2, lf, middle, 
+			index, updateValue);
 		else _SegTreeUpdate(tree, value * 2, middle + 1, rt, index, updateValue);
 
 		tree[value].value = tree[value * 2].value + tree[value * 2 + 1].value;
+	}*/
+
+	if (index <= lf && rt <= index) {
+		arr[index] = updateValue;
+		tree[oldind].value = updateValue;
+		return;
 	}
+	if (rt < index || index < lf) return;
+
+	int middle = (rt + lf);
+	middle /= 2;
+	_SegTreeUpdate(tree,arr, oldind *2,lf,middle,index,updateValue);
+	_SegTreeUpdate(tree,arr, oldind *2+1,middle+1,rt,index,updateValue);
+	tree[oldind].value = tree[oldind * 2].value + tree[oldind * 2 + 1].value;
 }
 
-void SegTreeUpdate(SegTreeNode* tree,int number, int index, segmentTreeValue updateValue) {
+void SegTreeUpdate(SegTreeNode* tree,int* arr,int number, int index, segmentTreeValue updateValue) {
 
-	_SegTreeUpdate(tree,1,0,number-1,index,updateValue);
+	_SegTreeUpdate(tree,arr,1,0,number-1,index,updateValue);
 
 }
 
@@ -1709,11 +1725,42 @@ int main() {
 		printf("%d ", arr[i].key);
 	}*/
 	
-	SegTreeNode* tree = SegTreeInit(10);
-	int arr[5] = { 1,2,3,4,5};
 	
-	buildSegTree(tree, arr, 5);
-	SegTreeUpdate(tree, 5, 3, 100);
+	
+	int numberOfCats, numberOfEvents;
+	
+	scanf("%d %d",&numberOfCats,&numberOfEvents);
+	int* arr = calloc(numberOfCats+1, sizeof(int));
+	char* buf = malloc(2 * sizeof(char));
+	int index, value,newval,res;
+	//buildSegTree(tree,arr,numberOfCats);
+	SegTreeNode* tree = SegTreeInit(numberOfCats);
+	for (int i = 0; i < numberOfEvents; i++){
+		
+		scanf("%s", buf);
+		if (buf[0] == '+') {
+			
+			scanf("%d %d", &index, &value);
+			newval = arr[index-1] + value;
+			SegTreeUpdate(tree, arr,numberOfCats ,index-1, newval);
+		}
+		if (buf[0] == '-') {
+			scanf("%d %d", &index, &value);
+			if (arr[index-1] - value <= 0) {
+				SegTreeUpdate(tree, arr, numberOfCats, index-1, 0);
+			}
+			else {
+				newval = arr[index-1]-value;
+				SegTreeUpdate(tree, arr, numberOfCats, index-1, newval);
+			}
+		}
+		if (buf[0] == '?') {
+			scanf("%d %d", &index, &value);
+			res = SegTreeGetSum(tree, numberOfCats, index-1, value-1);
+			printf("%d\n", res);
+		}
+	}
+
 	return 0;
 }
 
