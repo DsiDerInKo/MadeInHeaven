@@ -1083,7 +1083,6 @@ void* BinSearchDown(void* elem, void* arr, size_t size_arr, size_t size_elem, cm
 			i = middle + 1;
 		}
 	}
-
 	answer = (char*)arr + i * size_elem;
 
 	return comp(answer, elem) == 0 ? answer : NULL;
