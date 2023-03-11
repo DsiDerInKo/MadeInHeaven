@@ -61,7 +61,7 @@ typedef int (*cmpf) (void*, void*);
 //Some rubish
 //
 typedef struct pairss {
-
+	
 	int key;
 	char* value;
 
@@ -190,17 +190,6 @@ void VectorFree(Vector* self) {
 
 }
 //
-
-
-
-unsigned int hash(int x) {
-
-	unsigned long long new = x;
-	new *= 1000000007;
-	new = new >> 20;   //might be 30
-
-	return (unsigned int)new;
-}
 
 
 
@@ -413,10 +402,16 @@ void HeapSwap(HeapPair** a, HeapPair** b) {
 //
 #define HashTableNodeType char*
 
-typedef struct HashTableNodes {
+typedef struct HashPairs {
 
 	HashTableNodeType value;
 	int key;
+
+}HashPair;
+
+typedef struct HashTableNodes {
+
+	HashPair elem;
 	struct HashTableNodes* next;
 	struct HashTableNodes* prev;
 
@@ -429,6 +424,15 @@ typedef struct HashTables {
 
 }HashTable;
 
+unsigned int hash(int x) {
+
+	unsigned long long new = x;
+	new *= 1000000007;
+	new = new >> 20;   //might be 30
+
+	return (unsigned int)new;
+}
+
 HashTable* HashTableInit(int size) {
 
 	HashTable* self = malloc(sizeof(HashTable));
@@ -438,7 +442,27 @@ HashTable* HashTableInit(int size) {
 	return self;
 }
 
+void append_pair(HashTable* HT, HashPair pair) {
 
+	unsigned int num = hash(pair.key);
+	unsigned int idex = num % HT->size;
+
+	if (HT->arr[idex] != 0) {
+		for (Node* temp = HT->arr[idex]->next; temp != HT->arr[idex]; temp = temp->next) {
+			if (pair.key == temp->elem.key) {
+				temp->elem.key = pair.key;
+				return;
+			}
+		}
+		//NodeAddAfter(pair, HT->arr[idex]);
+	}
+	else {
+		HT->arr[idex] = NodeHeadCreate();
+		//NodeAddAfter(pair, HT->arr[idex]);
+	}
+
+	return;
+}
 /*
 typedef struct Pairs {
 	int key;
@@ -1084,6 +1108,22 @@ void* LowerBound(void* elem, void* arr, size_t size_arr, size_t size_elem, cmpf 
 	return answer;
 }
 
+int Partition(int* arr, int left, int right) {
+
+	int pivo = arr[(left + right) / 2];
+	int i = left, j = right;
+	while (i <= j) {
+		while (arr[i] < pivo) i++;
+		while (arr[j] > pivo) j--;
+		if (i >= j) {
+			break;
+		}
+		swap(&arr[i++], &arr[j--]);
+	}
+
+	return j;
+}
+
 int KStatistics(int* arr, int number, int point) {
 
 	int left_arr = 0, right_arr = number - 1;
@@ -1225,22 +1265,6 @@ int CustomPartition(int* arr, int len, int pivot) {
 	free(new_arr);
 
 	return j + 1;
-}
-
-int Partition(int* arr, int left, int right) {
-
-	int pivo = arr[(left + right) / 2];
-	int i = left, j = right;
-	while (i <= j) {
-		while (arr[i] < pivo) i++;
-		while (arr[j] > pivo) j--;
-		if (i >= j) {
-			break;
-		}
-		swap(&arr[i++], &arr[j--]);
-	}
-
-	return j;
 }
 
 void QuickSort(int* arr, int len) {
@@ -1631,58 +1655,6 @@ void fillip(treePair* arr,int index,int* res, int* i) {
 
 }
 
-//GET CLOWNED
-#define biba (
-#define boba )
-#define or ||
-#define and &&
-#define input(x) scanf("%d",& x) 
-#define MAIN int main()
-#define start {
-#define end }
-#define coma ,
-#define dotcoma ;
-#define dot .
-#define plus +
-#define minus -
-#define mult *
-#define is ==
-#define lt <
-#define gt >
-#define le <=
-#define ge >=
-#define inc ++
-#define adress &
-#define set =
-#define strcat(x, y) x##y
-#define comment strcat(/,/)
-#define one 1
-#define zero 0
-
-/*
-comment  MAIN
-MAIN 
-start
-
-	int number dotcoma
-	input(number) dotcoma
-
-	treePair* arr set malloc biba biba number plus one boba mult sizeof biba treePair boba boba dotcoma
-	for biba size_t i set one dotcoma i lt number plus one dotcoma i inc boba start
-		int num1 coma num2 coma num3 dotcoma
-		scanf biba "%d %d %d" coma adress num1 coma adress num2 coma adress num3 boba dotcoma
-		arr[i].key set num1 dotcoma
-		arr[i].left set num2 dotcoma
-		arr[i].right set num3 dotcoma
-	end
-	
-	if biba checker biba arr coma one coma INT_MIN coma INT_MAX boba boba printf biba "YES" boba dotcoma
-	else printf biba "NO" boba dotcoma
-	return zero dotcoma
-
-end
-*/
-
 int main() {
 	
 	freopen("input.txt", "r", stdin);	
@@ -1724,43 +1696,14 @@ int main() {
 	for (size_t i = 0; i < number; i++){
 		printf("%d ", arr[i].key);
 	}*/
-	
-	
-	
-	int numberOfCats, numberOfEvents;
-	
-	scanf("%d %d",&numberOfCats,&numberOfEvents);
-	int* arr = calloc(numberOfCats+1, sizeof(int));
-	char* buf = malloc(2 * sizeof(char));
-	int index, value,newval,res;
-	//buildSegTree(tree,arr,numberOfCats);
-	SegTreeNode* tree = SegTreeInit(numberOfCats);
-	for (int i = 0; i < numberOfEvents; i++){
-		
-		scanf("%s", buf);
-		if (buf[0] == '+') {
-			
-			scanf("%d %d", &index, &value);
-			newval = arr[index-1] + value;
-			SegTreeUpdate(tree, arr,numberOfCats ,index-1, newval);
-		}
-		if (buf[0] == '-') {
-			scanf("%d %d", &index, &value);
-			if (arr[index-1] - value <= 0) {
-				SegTreeUpdate(tree, arr, numberOfCats, index-1, 0);
-			}
-			else {
-				newval = arr[index-1]-value;
-				SegTreeUpdate(tree, arr, numberOfCats, index-1, newval);
-			}
-		}
-		if (buf[0] == '?') {
-			scanf("%d %d", &index, &value);
-			res = SegTreeGetSum(tree, numberOfCats, index-1, value-1);
-			printf("%d\n", res);
-		}
+	double summ = 0;
+	double num = 1;
+	for (int i = 1; i < 100; i++){
+		summ += (double)(1 / num);
+		num *= (i + 1);
 	}
 
+	printf("%.15lf", summ);
 	return 0;
 }
 
